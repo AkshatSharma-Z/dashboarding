@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid Catchment & Metrics Map - Slick Layout</title>
+
+    <!-- Leaflet CSS for OpenStreetMap -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
+
+    <style>
+        /* BASE LAYOUT: Now a single column 2x1 CSS Grid */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            /* Single column, full width */
+            grid-template-columns: 1fr;
+            /* Map on top, Metrics Table on bottom */
+            grid-template-rows: 1fr 1fr;
+            height: 100vh;
+            overflow: hidden; /* Prevent body scroll, let individual panels scroll */
+            background-color: #f0f2f5; /* Light background for overall dashboard */
+            gap: 0; /* Gaps between grid items are handled by resizers/padding */
+            box-sizing: border-box; /* Include padding in element's total width/height */
+        }
+
+        /* --- REMOVED: Legends Panel and Vertical Resizer --- */
+        /* These CSS rules are now removed as per requirements */
+
+        /* --- Main Map Area (Now spans full width) --- */
+        #map {
+            grid-column: 1 / 2; /* Now the only column */
+            grid-row: 1 / 2;    /* First row */
+            height: 100%;
+            width: 100%;
+            z-index: 1;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            background-color: #ffffff; /* Ensure map background is white before tiles load */
+            margin-left: 10px; /* Consistent margins */
+            margin-right: 10px;
+            margin-top: 10px;
+            margin-bottom: 5px; /* Space from horizontal resizer */
+            position: relative; /* Crucial for positioning floating legends */
+        }
+
+        /* --- Floating Map Legends --- */
+        .map-legend {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            z-index: 1000; /* Above map tiles */
+            font-size: 0.85em;
+            max-height: 250px; /* Limit height for scrolling */
+            overflow-y: auto;
+        }
+
+        #catchment-legend {
+            bottom: 10px;
+            left: 10px;
+            width: 200px; /* Fixed width to make it compact */
+        }
+
+        #store-legend {
+            bottom: 10px;
+            right: 10px;
+            width: 150px; /* Fixed width to make it compact */
+        }
+
+        .map-legend h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #343a40;
+            font-size: 1em;
+            text-transform: uppercase;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-color-swatch, .legend-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            margin-right: 8px;
+            border: 1px solid #cccccc;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+
+        .legend-icon.triangle { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); border-radius: 0; }
+        .legend-icon.circle { border-radius: 50%; }
+        .legend-icon.square { border-radius: 0; }
+
+
+        /* --- Horizontal Resizer (unchanged functionality) --- */
+        #horizontal-resizer {
+            grid-column: 1 / 2; /* Now in the first (and only) column */
+            grid-row: 1 / 2;    /* In the first row */
+            height: 10px; /* Make it visually grabable */
+            cursor: ns-resize;
+            background-color: transparent; /* Initially transparent */
+            z-index: 10; /* Above map */
+            align-self: end; /* Align to the bottom edge of its grid cell */
+            transform: translateY(5px); /* Center it over the map's bottom border */
+            margin-left: 10px; /* Match map's left margin */
+            margin-right: 10px; /* Match map's right margin */
+        }
+        #horizontal-resizer:hover {
+            background-color: rgba(0, 123, 255, 0.1); /* Highlight on hover */
+        }
+
+
+        /* Leaflet custom styles for map overlays */
+        .leaflet-pane.leaflet-overlay-pane path { stroke-width: 1px; }
+        .leaflet-popup-content-wrapper { border-radius: 5px; }
+        .leaflet-popup-content { margin: 10px !important; font-size: 0.9em; line-height: 1.4; }
+        .leaflet-popup-content b { color: #333; }
+        .custom-leaflet-div-icon { background: transparent !important; border: none !important; box-shadow: none !important; margin-left: 0px !important; margin-top: 0px !important; }
+        .custom-leaflet-div-icon > div { box-sizing: content-box !important; }
+
+
+        /* --- Right Panel (Overall Metrics - now spans full width) --- */
+        #right-panel {
+            grid-column: 1 / 2; /* Now the only column */
+            grid-row: 2 / 3;    /* Second row */
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0; /* Border for metrics panel */
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden; /* For table's internal scroll */
+            padding: 15px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            position: relative; /* For consistency */
+            margin-left: 10px; /* Consistent margins */
+            margin-right: 10px;
+            margin-bottom: 10px;
+            margin-top: 5px; /* Space from horizontal resizer */
+        }
+
+        /* Removed any panel toggle buttons as panels are always visible */
+        .panel-toggle { display: none !important; }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e6ea; /* Slightly darker border */
+            flex-shrink: 0;
+        }
+        .panel-header h3 { margin: 0; font-size: 1.2em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #343a40;}
+        .panel-header small { white-space: nowrap; font-size: 0.9em; color: #6c757d;}
+        .panel-header button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease;
+            margin-left: 15px;
+        }
+        .panel-header button:hover {
+            background-color: #0056b3;
+        }
+
+        .right-panel-content {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            overflow: hidden; /* Child table wrapper manages its own scroll */
+        }
+
+        .metrics-table-container {
+            overflow: hidden;
+            width: 100%;
+            flex-grow: 1;
+        }
+        .metrics-table-wrapper {
+            max-height: 100%; /* Important for vertical scrolling table */
+            overflow-y: auto;
+            overflow-x: auto; /* Allow horizontal scroll for wide tables */
+            padding-right: 1px; /* To prevent scrollbar from hiding content */
+            border-radius: 6px; /* Apply border-radius to the wrapper */
+            border: 1px solid #e9ecef; /* Subtle border for the whole table view */
+        }
+
+        /* --- Metrics Table Styles (Enhanced for appeal) --- */
+        .info-table {
+            width: 100%;
+            min-width: max-content; /* Allows table to grow if content is wide */
+            border-collapse: separate; /* For rounded corners on cells */
+            border-spacing: 0;
+            font-size: 0.9em;
+            margin-bottom: 1px;
+            background-color: #ffffff; /* Ensure background consistency */
+        }
+        .info-table th, .info-table td {
+            padding: 12px 18px; /* Increased padding */
+            border-bottom: 1px solid #f0f2f5; /* Lighter border for rows */
+            text-align: left;
+            word-wrap: break-word;
+            box-sizing: border-box;
+            vertical-align: middle; /* Align content vertically */
+        }
+
+        .info-table th {
+            background-color: #e9ecef; /* Slightly darker header background */
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            font-weight: 600;
+            color: #495057;
+            /* border-top: 1px solid #e9ecef; - Removed for cleaner look with wrapper border */
+        }
+        .info-table th:first-child { border-top-left-radius: 6px; }
+        .info-table th:last-child { border-top-right-radius: 6px; }
+
+        .info-table tbody tr:last-child td { border-bottom: none; }
+        .info-table tbody tr:nth-child(even) { background-color: #fbfbfc; } /* Subtle zebra striping */
+        .info-table tbody tr:hover td { background-color: #f0f4f7; } /* Hover effect for rows */
+
+        .info-table th.metric-header-cell {
+            position: sticky;
+            left: 0;
+            background-color: #e9ecef; /* Match header background */
+            z-index: 6;
+            min-width: 250px; /* Slightly wider for metric names */
+            width: 250px;
+            text-align: left;
+        }
+        .info-table td.metric-name-cell {
+            position: sticky;
+            left: 0;
+            background-color: inherit; /* Inherit from row for zebra striping */
+            z-index: 4;
+            min-width: 250px;
+            width: 250px;
+            font-weight: normal;
+            color: #343a40;
+        }
+        .info-table tbody tr:hover td.metric-name-cell { background-color: inherit; } /* Ensure hover works with sticky */
+
+
+        .info-table th.date-header-cell { text-align: center; min-width: 80px; } /* Wider date columns */
+        .info-table td.metric-value-cell { text-align: center; min-width: 80px; font-weight: 500;} /* Center values */
+
+        .info-table tr.metric-group-header { cursor: pointer; background-color: #dee2e6; } /* Darker group header */
+        .info-table td.metric-group-name-sticky-cell {
+            font-weight: bold;
+            background-color: #dee2e6; /* Match header background */
+            text-align: left !important;
+            padding-left: 15px; /* Slightly more padding */
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            min-width: 250px;
+            width: 250px;
+            border-bottom: 1px solid #c9d0d6; /* Stronger border for separation */
+            border-top: 1px solid #c9d0d6;
+            color: #343a40;
+        }
+        .info-table td.metric-group-filler-cell {
+            background-color: #dee2e6;
+            border-bottom: 1px solid #c9d0d6;
+            border-top: 1px solid #c9d0d6;
+        }
+        .info-table tr.metric-group-header:hover td { background-color: #c9d0d6; } /* Hover for group headers */
+        .info-table td.metric-group-name-sticky-cell .toggle-icon {
+            display: inline-block;
+            margin-right: 10px; /* More space */
+            font-size: 0.9em;
+            width: 1em;
+            text-align: center;
+            transition: transform 0.2s ease-in-out;
+            color: #6c757d;
+        }
+
+        /* Conditional Formatting - slightly softer colors */
+        .metric-value.good { background-color: #d1e7dd; color: #0f5132; font-weight: 600; }
+        .metric-value.bad { background-color: #f8d7da; color: #842029; font-weight: 600; }
+        .metric-value.neutral { background-color: #fff3cd; color: #664d03; font-weight: 600; }
+
+        /* Trend Indicator (Sparkline and Change Arrow) */
+        .trend-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px; /* Increased gap */
+            min-width: 130px; /* Wider trend column */
+            height: 35px; /* Taller for better sparkline visibility */
+        }
+
+        .sparkline {
+            width: 60px; /* Wider sparkline */
+            height: 25px; /* Taller sparkline */
+            vertical-align: middle;
+            flex-shrink: 0;
+        }
+
+        .trend-arrow {
+            font-size: 0.9em; /* Slightly larger font */
+            font-weight: bold;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .trend-arrow.up { color: #198754; } /* Bootstrap success green */
+        .trend-arrow.down { color: #dc3545; } /* Bootstrap danger red */
+        .trend-arrow.flat { color: #6c757d; }
+
+        /* Hide rows for collapsed categories */
+        .info-table tbody tr.collapsed { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Removed Legends Panel and Vertical Resizer -->
+
+    <!-- Main Map Area -->
+    <div id="map">
+        <!-- New Floating Legends will be injected here by JavaScript -->
+    </div>
+
+    <!-- Horizontal Resizer Handle -->
+    <div id="horizontal-resizer"></div>
+
+    <!-- Right Panel (Metrics Table - now spans full width) -->
+    <div id="right-panel">
+        <div class="right-panel-content">
+            <div class="panel-header">
+                <h3 id="right-panel-title">OVERALL SUMMARY - METRICS BY DATE</h3>
+                <small id="data-warning-message" style="display:none; color: orange; margin-left: 10px;"></small>
+                <button id="reset-view-button" style="display: none;">View Overall Summary</button>
+            </div>
+            <div class="metrics-table-container">
+                <div class="metrics-table-wrapper">
+                    <table class="info-table">
+                        <thead></thead>
+                        <tbody id="info-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- DATA AND CONFIGURATION ---
+    const allCatchmentNames = [
+        "Other", "Anekal / Sarjapur Extn Boundary", "Electronic City Boundary", "BTM / Bannerghatta Rd Boundary",
+        "Kengeri / RR Nagar Boundary", "HSR Layout / Agara Boundary", "Jayanagar / JP Nagar Boundary",
+        "Koramangala Boundary", "Marathahalli / Bellandur Boundary", "Whitefield / Hoodi Boundary",
+        "Rajajinagar / Malleshwaram Boundary", "MG Road / CBD Boundary", "Indiranagar / Domlur Boundary",
+        "Peenya / Jalahalli Boundary", "Hebbal / Yelahanka Boundary", "Devanahalli / Airport Boundary",
+        "Unknown Catchment"
+    ];
+
+ const storeTypesData = [
+        { name: "Retail", icon_shape: "triangle", color: "#FFC107" },
+        { name: "New Retail", icon_shape: "triangle", color: "#fd7e14" },
+        { name: "BBNow", icon_shape: "circle", color: "#6C757D" },
+        { name: "Active BBNow", icon_shape: "circle", color: "#28A745" },
+        { name: "FC", icon_shape: "square", color: "#007BFF" },
+    ];
+
+    const catchmentMapping = {
+"Bangalore_1": "Other",	
+"Bangalore_2": "Other",	
+"Bangalore_4000": "Other",	
+"Bangalore_4001": "Other",	
+   };
+    const catchmentColors = {
+        "Other": "#A9A9A9", "Anekal / Sarjapur Extn Boundary": "#FF6347", "Electronic City Boundary": "#4682B4",
+        "BTM / Bannerghatta Rd Boundary": "#32CD32", "Kengeri / RR Nagar Boundary": "#FFD700",
+        "HSR Layout / Agara Boundary": "#6A5ACD", "Jayanagar / JP Nagar Boundary": "#FF4500",
+        "Koramangala Boundary": "#20B2AA", "Marathahalli / Bellandur Boundary": "#DA70D6",
+        "Whitefield / Hoodi Boundary": "#00CED1", "Rajajinagar / Malleswaram Boundary": "#9370DB",
+        "MG Road / CBD Boundary": "#FF1493", "Indiranagar / Domlur Boundary": "#7FFF00",
+        "Peenya / Jalahalli Boundary": "#1E90FF", "Hebbal / Yelahanka Boundary": "#B22222",
+        "Devanahalli / Airport Boundary": "#FF8C00", "Unknown Catchment": "#708090"
+    };
+    const geoJsonData = {
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "Bangalore_1"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.303303,
+              12.687044
+            ],
+            [
+              77.3125094857866,
+              12.687044
+            ],
+            [
+              77.3125094857866,
+              12.69608331165728
+            ],
+            [
+              77.303303,
+              12.69608331165728
+            ],
+            [
+              77.303303,
+              12.687044
+            ]
+          ]
+        ]
+      },
+      "id": 0
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "Bangalore_2"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.3125094857866,
+              12.687044
+            ],
+            [
+              77.32171597156749,
+              12.687044
+            ],
+            [
+              77.32171597156749,
+              12.69608331165728
+            ],
+            [
+              77.3125094857866,
+              12.69608331165728
+            ],
+            [
+              77.3125094857866,
+              12.687044
+            ]
+          ]
+        ]
+      }
+    },
+  {
+      "type": "Feature",
+      "properties": {
+        "id": "Bangalore_4001"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.9201375350272,
+              13.202274841724906
+            ],
+            [
+              77.9293440204297,
+              13.202274841724906
+            ],
+            [
+              77.9293440204297,
+              13.211313796761548
+            ],
+            [
+              77.9201375350272,
+              13.211313796761548
+            ],
+            [
+              77.9201375350272,
+              13.202274841724906
+            ]
+          ]
+        ]
+      },
+      "id": 3943
+    }
+  ]
+};
+    const retailStoreData =   [{ storeId: "1MG_107",lat: 28.51354,lng: 76.97215, type:"Retail" },
+        { storeId: "1MG_109",lat: 28.50310378,lng: 77.00751334, type:"Retail" }, { storeId: "1MG_110",lat: 28.53298,lng: 77.3866, type:"Retail" },
+        { storeId: "1MG_120",lat: 28.5841168,lng: 77.3973942, type:"Retail" }, { storeId: "1MG_128",lat: 28.522,lng: 77.35493, type:"Retail" },
+        { storeId: "1MG_137",lat: 28.50659,lng: 77.40922, type:"Retail" }, { storeId: "1MG_AMN",lat: 26.85053968,lng: 80.86556199, type:"Retail" },
+        { storeId: "1MG_ANS",lat: 26.91185931,lng: 75.82435744, type:"Retail" }, { storeId: "1MG_BCE",lat: 22.57581,lng: 88.45297, type:"Retail" },
+        { storeId: "1MG_CHP",lat: 22.61995,lng: 88.44188, type:"Retail" }, { storeId: "1MG_CPH",lat: 30.30554529,lng: 77.9999287, type:"Retail" },
+        { storeId: "1MG_CRD",lat: 28.62989,lng: 77.42342, type:"Retail" }, { storeId: "1MG_DDM",lat: 22.66168797,lng: 88.43418626, type:"Retail" },
+        { storeId: "1MG_ERO",lat: 28.41394,lng: 77.05281, type:"Retail" }, { storeId: "1MG_FBS",lat: 28.41891,lng: 77.35605, type:"Retail" },
+        { storeId: "1MG_GLB",lat: 26.81036092,lng: 75.80905811, type:"Retail" }, { storeId: "1MG_GLR",lat: 28.46535,lng: 77.08368, type:"Retail" },
+        { storeId: "1MG_GPP",lat: 26.86983116,lng: 75.78018336, type:"Retail" }, { storeId: "1MG_HMT",lat: 28.43429,lng: 77.05964, type:"Retail" },
+        { storeId: "1MG_IDN",lat: 26.87836114,lng: 81.00195135, type:"Retail" }, { storeId: "1MG_ILC",lat: 26.79600019,lng: 80.88229552, type:"Retail" },
+        { storeId: "1MG_JGT",lat: 26.83338943,lng: 75.81578004, type:"Retail" }, { storeId: "1MG_JHR",lat: 28.46631081,lng: 77.02734485, type:"Retail" },
+        { storeId: "1MG_JKP",lat: 26.91773,lng: 80.9574, type:"Retail" }, { storeId: "1MG_JMN",lat: 26.84688,lng: 75.80888, type:"Retail" },
+        { storeId: "1MG_JPT",lat: 26.89405767,lng: 75.76594849, type:"Retail" }, { storeId: "1MG_LAL",lat: 26.90183027,lng: 75.71695891, type:"Retail" },
+        { storeId: "1MG_M3M",lat: 28.39255193,lng: 77.0660519, type:"Retail" }, { storeId: "1MG_MVI",lat: 26.86136921,lng: 75.74295829, type:"Retail" },
+        { storeId: "1MG_MVN",lat: 26.85504685,lng: 75.81337248, type:"Retail" }, { storeId: "1MG_MYR",lat: 28.60916,lng: 77.29385, type:"Retail" },
+        { storeId: "1MG_NHG",lat: 26.86545,lng: 80.95904, type:"Retail" }, { storeId: "1MG_NRN",lat: 26.88645207,lng: 75.7515268, type:"Retail" },
+        { storeId: "1MG_PAV",lat: 28.67265,lng: 77.1029, type:"Retail" }, { storeId: "1MG_ECO",lat: 28.51121,lng: 77.41037, type:"Retail" },
+        { storeId: "1MG_PII",lat: 26.81291847,lng: 80.99477645, type:"Retail" }, { storeId: "1MG_PLV",lat: 28.51066,lng: 77.03298, type:"Retail" },
+        { storeId: "1MG_PMV",lat: 28.51455,lng: 77.03632, type:"Retail" }, { storeId: "1MG_PTN",lat: 26.90172473,lng: 75.78599492, type:"Retail" },
+        { storeId: "1MG_QTB",lat: 28.46986,lng: 77.10042, type:"Retail" }, { storeId: "1MGR_BR",lat: 22.60803,lng: 88.39402, type:"Retail" },
+        { storeId: "1MG_RBS",lat: 22.65336,lng: 88.41681, type:"Retail" }, { storeId: "1MGR_DG",lat: 26.85156,lng: 75.78354, type:"Retail" },
+        { storeId: "1MGR_GT",lat: 28.69892,lng: 77.20774, type:"Retail" }, { storeId: "1MGR_JR",lat: 26.89751,lng: 75.82219, type:"Retail" },
+        { storeId: "1MGR_JW",lat: 26.89482,lng: 75.83695, type:"Retail" }, { storeId: "1MG_RKK",lat: 26.76623581,lng: 80.94054531, type:"Retail" },
+        { storeId: "1MGR_NO",lat: 28.54831,lng: 77.34801, type:"Retail" }, { storeId: "1MG_RPM",lat: 26.84556669,lng: 80.87646596, type:"Retail" },
+        { storeId: "1MGR_SH",lat: 26.93711,lng: 75.79545, type:"Retail" }, { storeId: "1MGR_SY",lat: 26.89024,lng: 75.76999, type:"Retail" },
+        { storeId: "1MG_S04",lat: 28.59803,lng: 77.04844, type:"Retail" }, { storeId: "1MG_S07",lat: 28.47895,lng: 77.01079, type:"Retail" },
+        { storeId: "1MG_S12",lat: 28.5969146,lng: 77.3375954, type:"Retail" }, { storeId: "1MG_S16",lat: 28.66439,lng: 77.46327, type:"Retail" },
+        { storeId: "1MG_S22",lat: 28.56022,lng: 77.05949, type:"Retail" }, { storeId: "1MG_S37",lat: 28.45639,lng: 76.97492, type:"Retail" },
+        { storeId: "1MG_S49",lat: 28.41755,lng: 77.05289, type:"Retail" }, { storeId: "1MG_S56",lat: 28.42519,lng: 77.09916, type:"Retail" },
+        { storeId: "1MG_S72",lat: 28.38248,lng: 77.01689, type:"Retail" }, { storeId: "1MG_S74",lat: 28.57385,lng: 77.39082, type:"Retail" },
+        { storeId: "1MG_S81",lat: 28.39035,lng: 76.95242, type:"Retail" }, { storeId: "1MG_SD1",lat: 26.7824497,lng: 80.89747945, type:"Retail" },
+        { storeId: "1MG_SDM",lat: 26.86984,lng: 80.92616, type:"Retail" }, { storeId: "1MG_SEB",lat: 26.90700803,lng: 80.94532502, type:"Retail" },
+        { storeId: "1MG_SNC",lat: 28.40018,lng: 77.27578, type:"Retail" }, { storeId: "1MG_SPR",lat: 28.39282,lng: 76.96741, type:"Retail" },
+        { storeId: "1MG_SPZ",lat: 28.39515,lng: 77.03147, type:"Retail" }, { storeId: "1MG_RDC",lat: 28.67486,lng: 77.44305, type:"Retail" },
+        { storeId: "1MGR_SR",lat: 26.9208,lng: 75.73445, type:"Retail" }, { storeId: "1MG_S20",lat: 28.5147206,lng: 77.07679765, type:"Retail" },
+        { storeId: "1MG_SNY",lat: 26.77849,lng: 80.92746, type:"Retail" }, { storeId: "1MG_SST",lat: 28.46031,lng: 77.08436, type:"Retail" },
+        { storeId: "1MG_SVN",lat: 26.88012262,lng: 80.96987177, type:"Retail" }, { storeId: "1MG_UBE",lat: 28.51053,lng: 77.04892, type:"Retail" },
+        { storeId: "1MG_BNR",lat: 22.60433,lng: 88.40949, type:"Retail" }, { storeId: "1MG_CNP",lat: 28.44082,lng: 77.10164, type:"Retail" },
+        { storeId: "1MG_VAI",lat: 28.64034,lng: 77.34282, type:"Retail" }, { storeId: "1MG_VHN",lat: 26.90220709,lng: 75.75385346, type:"Retail" },
+        { storeId: "1MG_VIN",lat: 26.88867571,lng: 80.96480928, type:"Retail" }, { storeId: "1MG_VK2",lat: 26.85786324,lng: 80.99302453, type:"Retail" },
+        { storeId: "1MG_VKN",lat: 26.89283861,lng: 80.96558206, type:"Retail" }, { storeId: "1MG_VPM",lat: 26.84790622,lng: 75.76980309, type:"Retail" },
+        { storeId: "1MG_VSV",lat: 30.31533,lng: 77.99945, type:"Retail" }, { storeId: "1MG_WP2",lat: 28.70883,lng: 77.42313, type:"Retail" },
+        { storeId: "1MG_GAL",lat: 28.6195,lng: 77.42305, type:"Retail" }, { storeId: "1MG_GRN",lat: 26.83877799,lng: 75.76255263, type:"Retail" },
+        { storeId: "1MG_TOT",lat: 28.61438243,lng: 77.37171383, type:"Retail" }, { storeId: "1MG_IDP",lat: 28.63833,lng: 77.36891, type:"Retail" },
+        { storeId: "1MG_KSN",lat: 30.33412,lng: 78.02665, type:"Retail" }, { storeId: "1MG_NK1",lat: 28.64064,lng: 77.35262, type:"Retail" },
+        { storeId: "1MG_RTP",lat: 22.48889,lng: 88.34509, type:"Retail" }, { storeId: "1MG_CTS",lat: 22.62522,lng: 88.49162, type:"Retail" },
+        { storeId: "1MG_MCI",lat: 26.90095949,lng: 80.99908391, type:"Retail" }, { storeId: "1MG_S47",lat: 28.41994,lng: 77.0475, type:"Retail" },
+        { storeId: "1MG_SWP",lat: 26.87251787,lng: 75.75839086, type:"Retail" }, { storeId: "1MG_VSN",lat: 26.9112818,lng: 75.74244989, type:"Retail" },
+        { storeId: "1MG_JPM",lat: 26.91563,lng: 80.94506, type:"Retail" }, { storeId: "1MG_NIT",lat: 28.40081,lng: 77.30348, type:"Retail" },
+        { storeId: "1MG_S95",lat: 28.4228,lng: 76.91863, type:"Retail" }, { storeId: "1MG_DDN",lat: 30.32492,lng: 78.05316, type:"Retail" },
+        { storeId: "1MG_EPN",lat: 28.64561,lng: 77.17311, type:"Retail" }, { storeId: "1MG_S08",lat: 28.65391,lng: 77.40438, type:"Retail" },
+        { storeId: "1MG_CKS",lat: 26.90498,lng: 75.73365, type:"Retail" }, { storeId: "1MG_CTA",lat: 28.48121,lng: 77.08604, type:"Retail" },
+        { storeId: "1MG_ROF",lat: 28.45298,lng: 77.08225, type:"Retail" }, { storeId: "1MG_VAT",lat: 28.4024,lng: 77.04591, type:"Retail" },
+        { storeId: "store" ,lat: 28.60849, lng: 77.38093, type: 'FC' }, { storeId: "store" ,lat: 12.95526, lng: 80.24591, type: 'FC' },
+        { storeId: "store" ,lat: 17.40027, lng: 78.41444, type: 'FC' }, { storeId: "store" ,lat: 26.11369, lng: 91.73761, type: 'FC' },
+        { storeId: "store" ,lat: 13.06283, lng: 77.45536, type: 'FC' }, { storeId: "store" ,lat: 26.78126, lng: 80.87626, type: 'FC' },
+        { storeId: "store" ,lat: 22.5713, lng: 88.17149, type: 'FC' }, { storeId: "store" ,lat: 20.25731, lng: 85.83808, type: 'FC' },
+        { storeId: "store" ,lat: 26.98052, lng: 75.7794, type: 'FC' }, { storeId: "store" ,lat: 28.4219264, lng: 77.0218915, type: 'FC' },
+        { storeId: "store" ,lat: 19.06097, lng: 73.0137, type: 'FC' }, { storeId: "BB_JPN" ,lat: 12.88782381, lng: 77.58654404, type: 'Active BBNow' },
+        { storeId: "store" ,lat: 26.78126, lng: 80.87626, type: 'FC' },
+        { storeId: "T1MG525",lat: 22.6625556, lng: 88.3786157, type: "New Retail" }, { storeId: "T1MG599",lat: 22.4623197, lng: 88.3037429, type: "New Retail" },
+        { storeId: "T1MG626",lat: 26.888405, lng: 80.94628, type: "New Retail" }, { storeId: "T1MG738",lat: 26.8783271, lng: 80.9998660999999, type: "New Retail" },
+        { storeId: "T1MG705",lat: 25.430414, lng: 81.830152, type: "New Retail" }, { storeId: "T1MG769",lat: 22.6268735, lng: 88.350518, type: "New Retail" },
+        { storeId: "T1MG766",lat: 22.6321251, lng: 88.2251422, type: "New Retail" }, { storeId: "T1MG801",lat: 26.8803625, lng: 80.9925781, type: "New Retail" },
+        { storeId: "T1MG749",lat: 26.8952559, lng: 80.9620530999999, type: "New Retail" }, { storeId: "T1MG786",lat: 22.7674773, lng: 88.385276, type: "New Retail" },
+        { storeId: "T1MG806",lat: 22.984491, lng: 88.391608, type: "New Retail" }, { storeId: "T1MG812",lat: 23.4005, lng: 85.33926, type: "New Retail" },
+        { storeId: "T1MG819",lat: 22.6911995, lng: 88.4714453, type: "New Retail" }, { storeId: "T1MG813",lat: 22.7116602, lng: 88.3853336, type: "New Retail" },
+        { storeId: "T1MG815",lat: 22.7003234, lng: 88.3854185, type: "New Retail" }, { storeId: "T1MG554",lat: 22.7114861, lng: 88.4776931, type: "New Retail" },
+        { storeId: "T1MG816",lat: 22.5138556, lng: 88.3945415, type: "New Retail" }, { storeId: "T1MG842",lat: 22.6204096, lng: 88.3485056, type: "New Retail" },
+        { storeId: "T1MG860",lat: 22.5130116, lng: 88.3231244, type: "New Retail" }, { storeId: "T1MG866",lat: 22.8454745, lng: 88.360033, type: "New Retail" },
+        { storeId: "T1MG884",lat: 22.8454687, lng: 88.360083, type: "New Retail" }, { storeId: "T1MG871",lat: 28.4657818, lng: 77.0461875, type: "New Retail" },
+        { storeId: "T1MG922",lat: 23.3715829, lng: 85.328092, type: "New Retail" }, { storeId: "T1MG952",lat: 22.7871959, lng: 86.1831844, type: "New Retail" },
+        { storeId: "T1MG938",lat: 23.3711111, lng: 85.3325, type: "New Retail" }, { storeId: "T1MG983",lat: 26.144508, lng: 91.780876, type: "New Retail" },
+        { storeId: "T1MG1002",lat: 22.7098325, lng: 88.4703916, type: "New Retail" }, { storeId: "T1MG1015",lat: 22.7235295, lng: 88.4925415, type: "New Retail" },
+        { storeId: "T1MG846",lat: 22.441389, lng: 88.3958169, type: "New Retail" }, { storeId: "T1MG1035",lat: 22.6672476999999, lng: 88.3375149, type: "New Retail" },
+        { storeId: "T1MG953",lat: 26.85553, lng: 75.766161, type: "New Retail" }, { storeId: "T1MG849",lat: 26.435461, lng: 80.329933, type: "New Retail" },
+        { storeId: "T1MG1049",lat: 22.5720078, lng: 88.3680909, type: "New Retail" }, { storeId: "T1MG1010",lat: 22.4633847, lng: 88.38194, type: "New Retail" },
+        { storeId: "T1MG1012",lat: 22.5591143, lng: 88.4951667, type: "New Retail" }, { storeId: "T1MG1072",lat: 26.9613053, lng: 75.6966658, type: "New Retail" },
+        { storeId: "T1MG1076",lat: 30.3530012, lng: 78.0244674, type: "New Retail" }, { storeId: "T1MG1070",lat: 22.6412398, lng: 88.4692565, type: "New Retail" },
+        { storeId: "T1MG1111",lat: 22.6064478, lng: 88.4031925, type: "New Retail" }, { storeId: "T1MG1166",lat: 22.6519724, lng: 88.3770578, type: "New Retail" },
+        { storeId: "T1MG1168",lat: 22.4832207, lng: 88.3857451, type: "New Retail" }, { storeId: "T1MG1198",lat: 22.6776118, lng: 88.4593456, type: "New Retail" },
+        { storeId: "T1MG1199",lat: 26.8902234, lng: 75.8093007, type: "New Retail" }, { storeId: "T1MG1215",lat: 28.6639412, lng: 77.3754636, type: "New Retail" },
+        { storeId: "T1MG1216",lat: 26.8491679, lng: 81.0052174, type: "New Retail" }, { storeId: "T1MG1217",lat: 22.4818507, lng: 88.3167068, type: "New Retail" },
+        { storeId: "T1MG1218",lat: 28.6383606, lng: 77.3464293, type: "New Retail" }, { storeId: "T1MG1065",lat: 22.5842438, lng: 88.3668515, type: "New Retail" },
+        { storeId: "T1MG1293",lat: 22.7076594, lng: 88.390455, type: "New Retail" }, { storeId: "T1MG1318",lat: 26.4418889, lng: 80.2805084, type: "New Retail" },
+        { storeId: "T1MG1324",lat: 26.464448, lng: 80.305913, type: "New Retail" }, { storeId: "T1MG1273",lat: 26.484114, lng: 80.2681097, type: "New Retail" },
+        { storeId: "T1MG1313",lat: 22.6998175, lng: 88.3827271, type: "New Retail" }, { storeId: "T1MG1330",lat: 28.5598346, lng: 77.2729313, type: "New Retail" },
+        { storeId: "T1MG1366",lat: 26.869239, lng: 81.0343255, type: "New Retail" }, { storeId: "T1MG1368",lat: 22.5000556, lng: 88.3301667, type: "New Retail" },
+        { storeId: "T1MG1342",lat: 22.5033865, lng: 88.3962217, type: "New Retail" }, { storeId: "T1MG1344",lat: 28.6451126, lng: 77.3448205, type: "New Retail" },
+        { storeId: "T1MG1356",lat: 26.8321038, lng: 80.885268, type: "New Retail" }, { storeId: "T1MG1379",lat: 28.5366621, lng: 77.2509104, type: "New Retail" },
+        { storeId: "T1MG1294",lat: 28.570364, lng: 77.219856, type: "New Retail" }, { storeId: "T1MG1337",lat: 30.3187514, lng: 78.0439091, type: "New Retail" },
+        { storeId: "T1MG1272",lat: 22.5656556, lng: 88.3499587, type: "New Retail" }, { storeId: "T1MG1383",lat: 22.6930278, lng: 88.4635833, type: "New Retail" },
+        { storeId: "T1MG1375",lat: 22.6288611, lng: 88.3898056, type: "New Retail" }, { storeId: "T1MG1428",lat: 22.650234, lng: 88.350633, type: "New Retail" },
+        { storeId: "T1MG1361",lat: 22.574309, lng: 88.328848, type: "New Retail" }, { storeId: "T1MG1386",lat: 22.7503389, lng: 88.3468239, type: "New Retail" },
+        { storeId: "T1MG1413",lat: 23.3706697, lng: 85.3122573, type: "New Retail" }, { storeId: "T1MG1431",lat: 23.360293, lng: 85.32639, type: "New Retail" },
+        { storeId: "T1MG1438",lat: 25.5917294, lng: 85.1738126, type: "New Retail" }, { storeId: "T1MG1439",lat: 22.7990738, lng: 86.1774045, type: "New Retail" },
+        { storeId: "T1MG1450",lat: 25.6306389, lng: 85.0988611, type: "New Retail" }, { storeId: "T1MG1455",lat: 25.584046, lng: 85.1392791, type: "New Retail" },
+        { storeId: "T1MG1456",lat: 23.3809234, lng: 85.328902, type: "New Retail" }, { storeId: "T1MG1458",lat: 26.4441667, lng: 80.2929167, type: "New Retail" },
+        { storeId: "T1MG1465",lat: 22.8241111, lng: 86.2214444, type: "New Retail" }, { storeId: "T1MG1469",lat: 26.8045833, lng: 75.81125, type: "New Retail" },
+        { storeId: "T1MG1472",lat: 26.7940083, lng: 80.9106546, type: "New Retail" }, { storeId: "T1MG1473",lat: 28.5631111, lng: 77.2381389, type: "New Retail" },
+        { storeId: "T1MG1477",lat: 26.9567135, lng: 75.740493, type: "New Retail" }, { storeId: "T1MG1500",lat: 22.7116667, lng: 88.3853333, type: "New Retail" },
+        { storeId: "T1MG1507",lat: 22.87275, lng: 88.3700833, type: "New Retail" }, { storeId: "T1MG1508",lat: 28.5374167, lng: 77.2178056, type: "New Retail" },
+        { storeId: "T1MG1441",lat: 28.5254444, lng: 77.2544167, type: "New Retail" }, { storeId: "T1MG1466",lat: 28.55949, lng: 77.256775, type: "New Retail" },
+        { storeId: "T1MG1453",lat: 22.95608, lng: 88.4215401, type: "New Retail" }, { storeId: "T1MG1295",lat: 20.2395328, lng: 85.7863418, type: "New Retail" },
+        { storeId: "T1MG1546",lat: 20.27, lng: 85.8055278, type: "New Retail" }, { storeId: "T1MG549",lat: 20.2407275, lng: 85.824645, type: "New Retail" },
+        { storeId: "T1MG1548",lat: 22.72099, lng: 88.354388, type: "New Retail" }, { storeId: "T1MG1549",lat: 22.5867188, lng: 88.3603133, type: "New Retail" },
+        { storeId: "T1MG1442",lat: 22.63372, lng: 88.461574, type: "New Retail" }, { storeId: "T1MG1582",lat: 22.6459167, lng: 88.3735556, type: "New Retail" },
+        { storeId: "T1MG1558",lat: 22.63094, lng: 88.37881, type: "New Retail" }, { storeId: "T1MG1486",lat: 22.6948597, lng: 88.5099114, type: "New Retail" },
+        { storeId: "T1MG1528",lat: 28.3987249, lng: 76.9330782, type: "New Retail" }, { storeId: "T1MG1563",lat: 25.4362105, lng: 81.8456978, type: "New Retail" },
+        { storeId: "T1MG1592",lat: 26.7590673, lng: 80.9489876, type: "New Retail" }, { storeId: "T1MG1591",lat: 26.8812548, lng: 75.779814, type: "New Retail" },
+        { storeId: "T1MG1594",lat: 26.9451956, lng: 75.7392452, type: "New Retail" }, { storeId: "T1mg1355",lat: 25.61617, lng: 85.07968, type: "New Retail" },
+        { storeId: "T1MG1451",lat: 28.4178611, lng: 76.9256389, type: "New Retail" }, { storeId: "T1MG1446",lat: 22.5012093, lng: 88.3484459, type: "New Retail" },
+        { storeId: "T1MG1517",lat: 22.5055278, lng: 88.3062778, type: "New Retail" }, { storeId: "T1MG1461",lat: 26.4655488, lng: 80.3229641, type: "New Retail" },
+        { storeId: "T1MG1596",lat: 25.3506617, lng: 82.9784144, type: "New Retail" }, { storeId: "T1MG1598",lat: 23.6264833, lng: 87.1145905, type: "New Retail" },
+        { storeId: "T1MG1599",lat: 22.6438889, lng: 88.4647778, type: "New Retail" }, { storeId: "T1MG1602",lat: 22.581589, lng: 88.471086, type: "New Retail" },
+        { storeId: "T1MG1609",lat: 22.5359852, lng: 88.3579624, type: "New Retail" },
+        { storeId: "B8",lat: 13.01328, lng: 77.64952, type: "Active BBNow" }, { storeId: "OPT 28",lat: 13.0084, lng: 77.73316, type: "BBNow" },
+        { storeId: "B33",lat: 17.499178, lng: 78.396953, type: "BBNow" }, { storeId: "OPT 52",lat: 12.90777, lng: 77.68903, type: "BBNow" },
+        { storeId: "OPT 34",lat: 12.91035, lng: 77.71418, type: "BBNow" }, { storeId: "S4",lat: 13.045584969062, lng: 80.1954162560862, type: "BBNow" },
+        { storeId: "B3",lat: 12.9045309846861, lng: 77.6427559815834, type: "BBNow" }, { storeId: "B10",lat: 12.91369, lng: 77.54126, type: "BBNow" },
+        { storeId: "A49",lat: 13.086462, lng: 77.615628, type: "BBNow" }, { storeId: "B30",lat: 12.97531, lng: 77.55513, type: "BBNow" },
+        { storeId: "B17",lat: 12.87483, lng: 77.64805, type: "BBNow" }, { storeId: "OPT 17",lat: 13.058064, lng: 77.633499, type: "BBNow" },
+        { storeId: "S11",lat: 12.9181853728722, lng: 80.1959461311952, type: "BBNow" }, { storeId: "A17",lat: 12.95381, lng: 80.16745, type: "BBNow" },
+        { storeId: "S5",lat: 17.4338873710725, lng: 78.4478079701252, type: "BBNow" }, { storeId: "B9",lat: 17.309751, lng: 78.523977, type: "BBNow" },
+        { storeId: "B13",lat: 12.98268, lng: 77.76709, type: "BBNow" }, { storeId: "OPT 39",lat: 12.81953, lng: 77.66149, type: "BBNow" },
+        { storeId: "OPT 31",lat: 12.93641, lng: 77.70383, type: "BBNow" }, { storeId: "B5",lat: 12.99392, lng: 77.55086, type: "BBNow" },
+        { storeId: "S17",lat: 13.0212007590364, lng: 80.1633939597787, type: "BBNow" }, { storeId: "S15",lat: 12.8433222481342, lng: 80.2277162574909, type: "BBNow" },
+        { storeId: "S28",lat: 17.3815641934176, lng: 78.4334611317741, type: "BBNow" }, { storeId: "B4",lat: 17.483243, lng: 78.354959, type: "BBNow" },
+        { storeId: "OPT 20",lat: 12.9746852781246, lng: 77.5194120802603, type: "BBNow" }, { storeId: "OPT 46",lat: 12.92656, lng: 77.60908, type: "BBNow" },
+        { storeId: "OPT 8",lat: 13.1017147927403, lng: 77.5623243969145, type: "BBNow" }, { storeId: "S8",lat: 12.93715, lng: 80.23563, type: "BBNow" },
+        { storeId: "S22",lat: 12.913212, lng: 80.093079, type: "BBNow" }, { storeId: "B27",lat: 17.35963, lng: 78.54988, type: "BBNow" },
+        { storeId: "S16",lat: 17.475765, lng: 78.417956, type: "BBNow" }, { storeId: "S14",lat: 17.427230074965, lng: 78.3261216246071, type: "BBNow" },
+        { storeId: "S21",lat: 17.4286735358383, lng: 78.5030015423273, type: "BBNow" }, { storeId: "OPT 12",lat: 12.9461, lng: 77.68485, type: "BBNow" },
+        { storeId: "B23",lat: 13.03725, lng: 77.53117, type: "BBNow" }, { storeId: "A28",lat: 17.3576, lng: 78.4683, type: "BBNow" },
+        { storeId: "S23",lat: 17.508134, lng: 78.467424, type: "BBNow" } // REMOVED TRAILING COMMA
+    ];
+
+    const dates = [];
+    const dateEntries = [
+        { value: "2024-05-02", text: "T-5 Day" }, { value: "2024-05-03", text: "T-4 Day" },
+        { value: "2024-05-04", text: "T-3 Day" }, { value: "2024-05-05", text: "T-2 Day" },
+        { value: "2024-05-06", text: "T-1 Day" }, { value: "2024-05-07", text: "T Day" }
+    ];
+    dateEntries.forEach(de => dates.push(de));
+
+const overallMetricsByDate = { /* Your full overallMetricsByDate data */
+        
+ "2024-05-02": {
+  title: "Overall Metrics",
+"population": 1,
+"1mgusers":2,
+"dailyTrafficUniqueUsers":3,
+"Homepage QC Coverage":4,
+"userConversionPercent":5,
+"placedOrdersDay":6,
+"deliveredOrdersDay":7,
+"discountPercent":8,
+"QCcoverage":9,
+"vasPerOrder":10,
+"aov":11,
+"invCoverageCart30min":12,
+"invHealthRetailAGrade":13,
+"invHealthRetailBGrade":14,
+"processingBreach":15,
+"processingTatMinsQC":16,
+"uhiPercent":17,
+"pushbackPercentRetail":18,
+"locationMappingPercent":19,
+"pickingPutawayAdherence":20,
+"selfAuditAdherence":21,
+"regularMassPulloutAdherence":22,
+"customerComplaintsPercent":23,
+"lmBreach":24,
+"lmTatMinsQC":25,
+"partnerShare3PLPercent":26,
+"riderAttrition":27,
+"riderEfficiency":28,
+"lmFunnelValue":29,
+"lokiCreatedToAllocated":30,
+"allocatedToPickup":31,
+"pickupToCxLocation":32,
+"cxLocationToDelivered":33,
+}
+, 
+ "2024-05-03": { title: "Overall Metrics",
+"population":34,
+"1mgusers":35,
+"dailyTrafficUniqueUsers":36,
+"Homepage QC Coverage":37,
+"userConversionPercent":38,
+"placedOrdersDay":39,
+"deliveredOrdersDay":40,
+"discountPercent":41,
+"QCcoverage":42,
+"vasPerOrder":43,
+"aov":44,
+"invCoverageCart30min":45,
+"invHealthRetailAGrade":46,
+"invHealthRetailBGrade":47,
+"processingBreach":48,
+"processingTatMinsQC":49,
+"uhiPercent":50,
+"pushbackPercentRetail":51,
+"locationMappingPercent":52,
+"pickingPutawayAdherence":53,
+"selfAuditAdherence":54,
+"regularMassPulloutAdherence":55,
+"customerComplaintsPercent":56,
+"lmBreach":57,
+"lmTatMinsQC":58,
+"partnerShare3PLPercent":59,
+"riderAttrition":60,
+"riderEfficiency":61,
+"lmFunnelValue":62,
+"lokiCreatedToAllocated":63,
+"allocatedToPickup":64,
+"pickupToCxLocation":65,
+"cxLocationToDelivered":66,
+},
+
+ "2024-05-04": { title: "Overall Metrics",
+"population":67,
+"1mgusers":68,
+"dailyTrafficUniqueUsers":69,
+"Homepage QC Coverage":70,
+"userConversionPercent":71,
+"placedOrdersDay":72,
+"deliveredOrdersDay":73,
+"discountPercent":74,
+"QCcoverage":75,
+"vasPerOrder":76,
+"aov":77,
+"invCoverageCart30min":78,
+"invHealthRetailAGrade":79,
+"invHealthRetailBGrade":80,
+"processingBreach":81,
+"processingTatMinsQC":82,
+"uhiPercent":83,
+"pushbackPercentRetail":84,
+"locationMappingPercent":85,
+"pickingPutawayAdherence":86,
+"selfAuditAdherence":87,
+"regularMassPulloutAdherence":88,
+"customerComplaintsPercent":89,
+"lmBreach":90,
+"lmTatMinsQC":91,
+"partnerShare3PLPercent":92,
+"riderAttrition":93,
+"riderEfficiency":94,
+"lmFunnelValue":95,
+"lokiCreatedToAllocated":96,
+"allocatedToPickup":97,
+"pickupToCxLocation":98,
+"cxLocationToDelivered":99,
+},
+
+"2024-05-05": { title: "Overall Metrics",
+"population":100,
+"1mgusers":101,
+"dailyTrafficUniqueUsers":102,
+"Homepage QC Coverage":103,
+"userConversionPercent":104,
+"placedOrdersDay":105,
+"deliveredOrdersDay":106,
+"discountPercent":107,
+"QCcoverage":108,
+"vasPerOrder":109,
+"aov":110,
+"invCoverageCart30min":111,
+"invHealthRetailAGrade":112,
+"invHealthRetailBGrade":113,
+"processingBreach":114,
+"processingTatMinsQC":115,
+"uhiPercent":116,
+"pushbackPercentRetail":117,
+"locationMappingPercent":118,
+"pickingPutawayAdherence":119,
+"selfAuditAdherence":120,
+"regularMassPulloutAdherence":121,
+"customerComplaintsPercent":122,
+"lmBreach":123,
+"lmTatMinsQC":124,
+"partnerShare3PLPercent":125,
+"riderAttrition":126,
+"riderEfficiency":127,
+"lmFunnelValue":128,
+"lokiCreatedToAllocated":129,
+"allocatedToPickup":130,
+"pickupToCxLocation":131,
+"cxLocationToDelivered":132,
+}, 
+
+"2024-05-06": { title: "Overall Metrics",
+"population":133,
+"1mgusers":134,
+"dailyTrafficUniqueUsers":135,
+"Homepage QC Coverage":136,
+"userConversionPercent":137,
+"placedOrdersDay":138,
+"deliveredOrdersDay":139,
+"discountPercent":140,
+"QCcoverage":141,
+"vasPerOrder":142,
+"aov":143,
+"invCoverageCart30min":144,
+"invHealthRetailAGrade":145,
+"invHealthRetailBGrade":146,
+"processingBreach":147,
+"processingTatMinsQC":148,
+"uhiPercent":149,
+"pushbackPercentRetail":150,
+"locationMappingPercent":151,
+"pickingPutawayAdherence":152,
+"selfAuditAdherence":153,
+"regularMassPulloutAdherence":154,
+"customerComplaintsPercent":155,
+"lmBreach":156,
+"lmTatMinsQC":157,
+"partnerShare3PLPercent":158,
+"riderAttrition":159,
+"riderEfficiency":160,
+"lmFunnelValue":161,
+"lokiCreatedToAllocated":162,
+"allocatedToPickup":163,
+"pickupToCxLocation":164,
+"cxLocationToDelivered":165,
+}, 
+
+"2024-05-07": { title: "Overall Metrics",
+"population":166,
+"1mgusers":167,
+"dailyTrafficUniqueUsers":168,
+"Homepage QC Coverage":169,
+"userConversionPercent":170,
+"placedOrdersDay":171,
+"deliveredOrdersDay":172,
+"discountPercent":173,
+"QCcoverage":174,
+"vasPerOrder":175,
+"aov":176,
+"invCoverageCart30min":177,
+"invHealthRetailAGrade":178,
+"invHealthRetailBGrade":179,
+"processingBreach":180,
+"processingTatMinsQC":181,
+"uhiPercent":182,
+"pushbackPercentRetail":183,
+"locationMappingPercent":184,
+"pickingPutawayAdherence":185,
+"selfAuditAdherence":186,
+"regularMassPulloutAdherence":187,
+"customerComplaintsPercent":188,
+"lmBreach":189,
+"lmTatMinsQC":190,
+"partnerShare3PLPercent":191,
+"riderAttrition":192,
+"riderEfficiency":193,
+"lmFunnelValue":194,
+"lokiCreatedToAllocated":195,
+"allocatedToPickup":196,
+"pickupToCxLocation":197,
+"cxLocationToDelivered":198,
+} };
+
+    function generateSampleMetrics(baseOverallMetrics, numCatchments, titlePrefix = "Metrics") {
+        const rand = (factor = 1) => Math.random() * factor;
+        const scale = (value, keyName = "") => {
+            const lowerKeyName = keyName.toLowerCase();
+            const isPercentageMetric = lowerKeyName.includes('percent') || lowerKeyName.includes('adherence') || lowerKeyName.includes('share') || lowerKeyName.includes('conversion');
+            const isAbsoluteNonDivisible = lowerKeyName.includes('tat') || lowerKeyName.includes('aov') || lowerKeyName.includes('vasperorder') || lowerKeyName.includes('efficiency');
+            if ((isPercentageMetric || isAbsoluteNonDivisible) && typeof value === 'number') {
+                let fluctuationBase = Math.max(value * 0.20, 2);
+                if (isPercentageMetric) fluctuationBase = Math.max(value * 0.15, 5);
+                let fluctuation = (rand(fluctuationBase * 2)) - fluctuationBase;
+                let numVal = value + fluctuation;
+                if (isPercentageMetric) numVal = Math.max(0, Math.min(numVal, 150));
+                else numVal = Math.max(0, numVal);
+                let decimals = 0;
+                if (String(value).includes('.')) decimals = String(value).split('.')[1].length;
+                if (keyName === 'userConversionPercent') decimals = 1;
+                if (keyName === 'vasPerOrder' || keyName === 'aov') decimals = 2;
+                return parseFloat(numVal.toFixed(decimals));
+            } else if (typeof value === 'number') {
+                return Math.floor((value / numCatchments) * (0.7 + rand(0.6)));
+            } else if (typeof value === 'string' && value.includes('|')) {
+                return value.split('|').map(s => Math.max(0, Math.min(100, Math.round(parseInt(s.trim()) * (0.95 + rand(0.1)))))).join(' | ');
+            }
+            return value;
+        };
+        const newMetrics = { title: titlePrefix };
+        for (const key in baseOverallMetrics) {
+            if (key !== 'title' && baseOverallMetrics.hasOwnProperty(key)) {
+                newMetrics[key] = scale(baseOverallMetrics[key], key);
+            }
+        }
+        return newMetrics;
+    }
+
+    const unknownMetrics = {
+        title: "Unknown Catchment Metrics", placedOrdersDay: "N/A", deliveredOrdersDay: "N/A", dailyTrafficUniqueUsers: "N/A", userConversionPercent: "N/A", totalTransactors: "N/A", discountPercent: "N/A", vasPerOrder: "N/A", aov: "N/A", invCoverageCart30min: "N/A", invCoverageCart60minDash: "N/A", invCoverageCart60min: "N/A", invHealthRetailAGrade: "N/A", invHealthRetailBGrade: "N/A", processingBreach: "N/A", processingTatMinsQC: "N/A", uhiPercent: "N/A", pushbackPercentRetail: "N/A", locationMappingPercent: "N/A", pickingPutawayAdherence: "N/A", selfAuditAdherence: "N/A", regularMassPulloutAdherence: "N/A", customerComplaintsPercent: "N/A", lmBreach: "N/A", lmTatMinsQC: "N/A", partnerShare3PLPercent: "N/A", lmFunnelValue: "N/A", lokiCreatedToAllocated: "N/A", allocatedToPickup: "N/A", pickupToCxLocation: "N/A", cxLocationToDelivered: "N/A", riderAttrition: "N/A", riderEfficiency: "N/A"
+    };
+
+    const catchmentMetricsData = {};
+    dates.forEach(dateObj => {
+        const dateString = dateObj.value;
+        const baseOverallForDate = overallMetricsByDate[dateString] || Object.values(overallMetricsByDate)[0];
+        catchmentMetricsData[dateString] = {
+            "ALL": baseOverallForDate,
+            "Unknown Catchment": { ...unknownMetrics, title: `Unknown Catchment Metrics - ${formatDisplayDate(dateString, false)}` }
+        };
+        // Ensure "Other" catchment also has generated data, not N/A
+        allCatchmentNames.forEach(name => {
+            if (name !== "Unknown Catchment" && !catchmentMetricsData[dateString][name]) { // Exclude Unknown, already handled
+                catchmentMetricsData[dateString][name] = generateSampleMetrics(baseOverallForDate, allCatchmentNames.length - 1, `${name} Metrics`);
+            }
+        });
+    });
+
+    const catchmentOrderData = {};
+    allCatchmentNames.forEach(name => { catchmentOrderData[name] = Math.floor(Math.random() * 50 + 20); });
+    catchmentOrderData["Unknown Catchment"] = 5;
+
+   const defaultStyle = { weight: 0, opacity: 0, color: '#000000', fillOpacity: 0.5 };
+    const catchmentBoundaryStyle = { weight: 2, color: '#007bff', fillColor: '#007bff', fillOpacity: 0, dashArray: '5, 5' }; // Slightly different highlight
+    const hoverStyle = { weight: 2, color: '#666', dashArray: '', fillOpacity: 0.7 };
+
+    let map;
+    let geojsonLayer;
+    let catchmentHighlightLayer = null;
+    let storeMarkersLayerGroup = L.layerGroup();
+    let metricGroupStates = {}; // To preserve expanded/collapsed state of metric groups
+    let currentSelectedCatchment = "ALL"; // Track the currently selected catchment for metrics
+
+    // --- HELPER FUNCTIONS ---
+
+    function getConditionalClass(value, oldValue, targetDirection) {
+        if (oldValue === undefined || value === oldValue || typeof value !== 'number' || typeof oldValue !== 'number') return '';
+        let change = value - oldValue;
+
+        if (targetDirection === 'up') {
+            return change >= 0 ? 'good' : 'bad';
+        } else if (targetDirection === 'down') {
+            return change <= 0 ? 'good' : 'bad';
+        }
+        return '';
+    }
+
+    function formatValue(value, format, decimals, unit) {
+        if (value === "N/A" || value === undefined || value === null) return "N/A";
+
+        const numVal = Number(value);
+        if (isNaN(numVal)) return String(value);
+
+        let formatted = numVal.toLocaleString(undefined, {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+
+        if (format === 'percentage' || format === 'percentageMaybe' || format === 'percentageTarget') {
+            formatted += '%';
+        } else if (format === 'minutes') {
+            formatted += ' min';
+        } else if (unit) {
+            formatted = unit + formatted;
+        }
+        return formatted;
+    }
+
+    function generateSparkline(values) {
+        const numericValues = values.filter(v => typeof v === 'number');
+        if (!numericValues || numericValues.length < 2) return '';
+
+        const width = 50;
+        const height = 20;
+        const padding = 2;
+
+        const maxVal = Math.max(...numericValues);
+        const minVal = Math.min(...numericValues);
+        const range = maxVal - minVal;
+
+        let points = [];
+        for (let i = 0; i < numericValues.length; i++) {
+            const x = (i / (numericValues.length - 1)) * (width - 2 * padding) + padding;
+            const y = range === 0 ? (height / 2) : (height - padding - ((numericValues[i] - minVal) / range) * (height - 2 * padding));
+            points.push(`${x},${y}`);
+        }
+
+        const pathData = `M${points.join('L')}`;
+        const lineColor = numericValues[numericValues.length - 1] >= numericValues[0] ? '#28a745' : '#dc3545';
+
+        return `<svg class="sparkline" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+                    <path d="${pathData}" fill="none" stroke="${lineColor}" stroke-width="1.5" />
+                </svg>`;
+    }
+
+    /**
+     * Calculates the slope (trend) using Linear Regression (Least Squares) method.
+     * @param {Array<number>} yValues - The array of data points (metric values).
+     * @returns {number|null} The slope (m) of the regression line, or null if calculation is not possible.
+     */
+    function calculateLinearRegressionTrend(yValues) {
+        const n = yValues.length;
+        if (n < 2) return null; // Need at least two points for a line
+
+        let sumX = 0;
+        let sumY = 0;
+        let sumXY = 0;
+        let sumX2 = 0;
+
+        for (let i = 0; i < n; i++) {
+            const x = i; // Independent variable (day index: 0, 1, 2, 3, 4, 5)
+            const y = yValues[i]; // Dependent variable (metric value)
+
+            sumX += x;
+            sumY += y;
+            sumXY += (x * y);
+            sumX2 += (x * x);
+        }
+
+        const numerator = (n * sumXY) - (sumX * sumY);
+        const denominator = (n * sumX2) - (sumX * sumX);
+
+        if (denominator === 0) {
+            return numerator === 0 ? 0 : NaN;
+        }
+
+        const slope = numerator / denominator;
+        return slope;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeMap();
+        preprocessGeoJsonData();
+        createFloatingLegends(); // New function for map legends
+        loadGeoJsonLayer();
+        plotStoreMarkers(); // No filtering needed here now, all types are always visible
+        initializeResizers(); // Initialize only horizontal resizer now
+        updateRightPanel("ALL"); // Initial load with overall metrics
+
+        // Event listener for the "View Overall Summary" button
+        document.getElementById('reset-view-button').addEventListener('click', resetHighlightAndFitAll);
+    });
+
+    function initializeMap() {
+        map = L.map('map').setView([12.9716, 77.5946], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+        }).addTo(map);
+    }
+
+    function preprocessGeoJsonData() {
+        geoJsonData.features.forEach(feature => {
+            feature.properties.catchmentName = catchmentMapping[feature.properties.id] || "Unknown Catchment";
+        });
+    }
+
+    function getFeatureStyle(feature) {
+        const catchmentName = feature.properties.catchmentName;
+        return {
+            ...defaultStyle,
+            fillColor: catchmentColors[catchmentName] || catchmentColors["Unknown Catchment"]
+        };
+    }
+
+    function loadGeoJsonLayer() {
+        geojsonLayer = L.geoJSON(geoJsonData, {
+            style: getFeatureStyle,
+            onEachFeature: onEachFeature_Hybrid
+        }).addTo(map);
+
+        if (geojsonLayer.getLayers().length > 0) {
+            const bounds = geojsonLayer.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds);
+            } else {
+                console.warn("GeoJSON bounds are invalid, setting default view.");
+                map.setView([12.9716, 77.5946], 10);
+            }
+        }
+    }
+
+    function onEachFeature_Hybrid(feature, layer) {
+        const originalCatchmentName = feature.properties.catchmentName;
+        const displayCatchmentName = formatCatchmentNameForDisplay(originalCatchmentName);
+        layer.bindPopup(() => `<b>ID:</b> ${feature.properties.id || 'N/A'}<br><b>Catchment:</b> ${displayCatchmentName}`);
+        const orders = catchmentOrderData[originalCatchmentName] || catchmentOrderData["Unknown Catchment"] || 0;
+        layer.bindTooltip(`Orders for ${displayCatchmentName}: ${orders}`, { sticky: true, direction: 'top' });
+
+        layer.on({
+            mouseover: e => {
+                // Only highlight if it's not the currently selected one
+                if (e.target.feature.properties.catchmentName !== currentSelectedCatchment) {
+                    e.target.setStyle(hoverStyle);
+                }
+            },
+            mouseout: e => {
+                // Only reset style if it's not the currently selected one
+                if (e.target.feature.properties.catchmentName !== currentSelectedCatchment) {
+                    geojsonLayer.resetStyle(e.target);
+                }
+            },
+            click: e => {
+                selectAndHighlightCatchmentWithMetrics(e.target.feature.properties.catchmentName, e.target);
+            }
+        });
+    }
+
+    function formatCatchmentNameForDisplay(originalName) {
+        if (typeof originalName !== 'string') return originalName;
+        if (originalName === "ALL") return "Overall Summary";
+        return originalName.replace(/\sBoundary$/i, '').trim();
+    }
+
+    // New function to create floating legends on the map
+    function createFloatingLegends() {
+        const mapDiv = document.getElementById('map');
+
+        // Catchment Legend
+        const catchmentLegendDiv = document.createElement('div');
+        catchmentLegendDiv.id = 'catchment-legend';
+        catchmentLegendDiv.className = 'map-legend';
+        let catchmentLegendHtml = '<h4>Catchment Colors</h4>';
+        allCatchmentNames.filter(name => !name.includes("Unknown Catchment")).sort().forEach(name => {
+            const color = catchmentColors[name] || '#A9A9A9';
+            catchmentLegendHtml += `
+                <div class="legend-item">
+                    <span class="legend-color-swatch" style="background-color: ${color};"></span>
+                    <span>${formatCatchmentNameForDisplay(name)}</span>
+                </div>
+            `;
+        });
+        // Add Unknown Catchment at the end if it's specifically relevant
+        if (catchmentColors["Unknown Catchment"]) {
+            catchmentLegendHtml += `
+                <div class="legend-item">
+                    <span class="legend-color-swatch" style="background-color: ${catchmentColors["Unknown Catchment"]};"></span>
+                    <span>Unknown Catchment</span>
+                </div>
+            `;
+        }
+        catchmentLegendDiv.innerHTML = catchmentLegendHtml;
+        mapDiv.appendChild(catchmentLegendDiv);
+
+        // Store Legend
+        const storeLegendDiv = document.createElement('div');
+        storeLegendDiv.id = 'store-legend';
+        storeLegendDiv.className = 'map-legend';
+        let storeLegendHtml = '<h4>Store Types</h4>';
+        storeTypesData.forEach(item => {
+            let iconHtml = '';
+            if (item.icon_shape === 'circle' || item.icon_shape === 'triangle' || item.icon_shape === 'square') {
+                iconHtml = `<span class="legend-icon ${item.icon_shape}" style="background-color:${item.color};"></span>`;
+            } else {
+                iconHtml = `<span class="legend-color-swatch" style="background-color:${item.color};"></span>`; // Fallback to square
+            }
+            storeLegendHtml += `
+                <div class="legend-item">
+                    ${iconHtml}
+                    <span>${item.name}</span>
+                </div>
+            `;
+        });
+        storeLegendDiv.innerHTML = storeLegendHtml;
+        mapDiv.appendChild(storeLegendDiv);
+    }
+
+    function selectAndHighlightCatchmentWithMetrics(originalCatchmentName, clickedLayer = null) {
+        // Remove previous highlight
+        if (catchmentHighlightLayer) { map.removeLayer(catchmentHighlightLayer); catchmentHighlightLayer = null; }
+        
+        // Reset all geojson layers to their default style
+        geojsonLayer.eachLayer(layer => {
+            geojsonLayer.resetStyle(layer);
+        });
+
+        currentSelectedCatchment = originalCatchmentName;
+
+        // Highlight the selected catchment on the map
+        if (originalCatchmentName !== "ALL") {
+            const featuresInCatchment = geoJsonData.features.filter(f => f.properties.catchmentName === originalCatchmentName);
+            if (featuresInCatchment.length > 0) {
+                let combinedGeom = featuresInCatchment[0].geometry;
+                for (let i = 1; i < featuresInCatchment.length; i++) {
+                    try {
+                        let unioned = turf.union(turf.feature(combinedGeom), featuresInCatchment[i]);
+                        if (unioned && unioned.geometry) combinedGeom = unioned.geometry;
+                    } catch (e) {
+                        console.error("Turf.union error:", e, featuresInCatchment[i].properties.id);
+                    }
+                }
+                if (combinedGeom) {
+                    catchmentHighlightLayer = L.geoJSON({ type: "Feature", geometry: combinedGeom }, { style: catchmentBoundaryStyle }).addTo(map);
+                    catchmentHighlightLayer.bringToFront();
+                    if (catchmentHighlightLayer.getBounds().isValid()) {
+                        map.fitBounds(catchmentHighlightLayer.getBounds().pad(0.1));
+                    }
+                }
+            } else if (clickedLayer && clickedLayer.getBounds().isValid()) {
+                map.fitBounds(clickedLayer.getBounds().pad(0.2));
+            }
+            if (clickedLayer) clickedLayer.openPopup();
+            document.getElementById('reset-view-button').style.display = 'inline-block'; // Show reset button
+        } else {
+            // When "ALL" is selected (initially or via reset)
+            document.getElementById('reset-view-button').style.display = 'none'; // Hide reset button
+        }
+
+        updateRightPanel(originalCatchmentName);
+    }
+
+    // Function to go back to overall summary view
+    function resetHighlightAndFitAll() {
+        selectAndHighlightCatchmentWithMetrics("ALL");
+        if (geojsonLayer.getLayers().length > 0) {
+            const bounds = geojsonLayer.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds);
+            } else {
+                map.setView([12.9716, 77.5946], 10);
+            }
+        }
+    }
+
+    // plotStoreMarkers: Removed filtering logic as per new requirement
+    function plotStoreMarkers() {
+        if (!map) return;
+        storeMarkersLayerGroup.clearLayers();
+        if (!retailStoreData || retailStoreData.length === 0) return;
+
+        // All store types are always visible now
+        retailStoreData.forEach(store => {
+            if (typeof store.lat !== 'number' || typeof store.lng !== 'number') return;
+
+            const storeTypeConfig = storeTypesData.find(st => st.name === store.type);
+            const fillColor = storeTypeConfig ? storeTypeConfig.color : 'black';
+            const shape = storeTypeConfig ? storeTypeConfig.icon_shape : 'circle';
+
+            let marker;
+            if (shape === 'circle') {
+                marker = L.circleMarker([store.lat, store.lng], {
+                    radius: 6, fillColor: fillColor, color: '#333', weight: 1, opacity: 1, fillOpacity: 0.7
+                });
+            } else {
+                 const iconHtml = `<div style="width:16px;height:16px;background-color:${fillColor};${shape === 'triangle' ? 'clip-path: polygon(50% 0%, 0% 100%, 100% 100%);' : (shape === 'square' ? '' : 'border-radius:0%;')}"></div>`;
+                 const customIcon = L.divIcon({
+                     html: iconHtml, className: 'custom-leaflet-div-icon', iconSize: [20, 20], iconAnchor: [10, 10]
+                 });
+                 marker = L.marker([store.lat, store.lng], { icon: customIcon });
+            }
+
+            marker.bindPopup(`<b>Store ID:</b> ${store.storeId || 'N/A'}<br><b>Type:</b> ${store.type || 'N/A'}`);
+            storeMarkersLayerGroup.addLayer(marker);
+        });
+        storeMarkersLayerGroup.addTo(map);
+    }
+
+    // Initialize only the horizontal resizer
+    function initializeResizers() {
+        const body = document.body;
+        const horizontalResizer = document.getElementById('horizontal-resizer');
+
+        let isResizingHorizontal = false;
+
+        // Set initial grid sizes on load to match CSS defaults
+        body.style.gridTemplateColumns = `1fr`; // Already set by CSS, but good for clarity
+        body.style.gridTemplateRows = `1fr 1fr`;
+
+        // Horizontal Resizer (Map Row vs Metrics Table Row)
+        horizontalResizer.addEventListener('mousedown', function(e) {
+            isResizingHorizontal = true;
+            e.preventDefault();
+            body.style.cursor = 'ns-resize';
+            window.addEventListener('mousemove', doDragHorizontal);
+            window.addEventListener('mouseup', stopDrag);
+        });
+
+        function doDragHorizontal(e) {
+            if (!isResizingHorizontal) return;
+            const bodyRect = body.getBoundingClientRect();
+            // Calculate new height for the map based on mouse position relative to body's top
+            const newMapHeight = e.clientY - bodyRect.top - 10; // Account for body's top margin
+
+            const minMapHeight = 150; // Minimum height for map
+            const minMetricsHeight = 250; // Minimum height for metrics table (consider header + few rows)
+            
+            const totalContentHeight = bodyRect.height - 20; // 10px top + 10px bottom padding on body
+            const maxMapHeight = totalContentHeight - minMetricsHeight;
+
+            if (newMapHeight > minMapHeight && newMapHeight < maxMapHeight) {
+                body.style.gridTemplateRows = `${newMapHeight}px 1fr`;
+                map.invalidateSize(); // Invalidate map size after row resize
+            }
+        }
+
+        function stopDrag() {
+            isResizingHorizontal = false;
+            body.style.cursor = 'default';
+            window.removeEventListener('mousemove', doDragHorizontal);
+            window.removeEventListener('mouseup', stopDrag);
+            map.invalidateSize(); // Final invalidate for map to ensure proper rendering
+        }
+    }
+
+
+    function getDayWithOrdinal(d) {
+        const day = d.getDate();
+        if (day > 3 && day < 21) return day + 'th';
+        switch (day % 10) {
+            case 1: return day + "st";
+            case 2: return day + "nd";
+            case 3: return day + "rd";
+            default: return day + "th";
+        }
+    }
+
+    function formatDisplayDate(dateString, includeYear = false) {
+        if (!dateString) return "Invalid Date";
+        const parts = dateString.split('-');
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        const date = new Date(year, month, day);
+        const dayWithOrdinal = getDayWithOrdinal(date);
+        const monthName = date.toLocaleDateString('en-GB', { month: 'long' });
+        return includeYear ? `${dayWithOrdinal} ${monthName} ${year}` : `${dayWithOrdinal} ${monthName}`;
+    }
+
+
+    function updateRightPanel(originalCatchmentName) {
+        const titleElement = document.getElementById('right-panel-title');
+        const warningMessageElement = document.getElementById('data-warning-message');
+        const displayCatchmentName = formatCatchmentNameForDisplay(originalCatchmentName);
+        
+        // Update title and warning message
+        if (originalCatchmentName === "ALL") {
+            titleElement.textContent = "OVERALL SUMMARY - METRICS BY DATE";
+            warningMessageElement.style.display = 'none';
+        } else {
+            titleElement.textContent = `${displayCatchmentName} - METRICS BY DATE`;
+            warningMessageElement.style.display = 'inline';
+            warningMessageElement.textContent = "Data shown below is Sample Data for " + displayCatchmentName;
+        }
+
+        const table = document.querySelector('#right-panel .info-table');
+        const thead = table.querySelector('thead');
+        const tbody = document.getElementById('info-table-body');
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+
+        // Display all 6 days (T-5 Day to T Day)
+        const recentDates = [...dates].reverse(); // Get all dates and reverse for T Day, T-1 Day, ..., T-5 Day order
+
+        const headerRow = thead.insertRow();
+        const thMetric = document.createElement('th');
+        thMetric.textContent = "Metric";
+        thMetric.classList.add('metric-header-cell');
+        headerRow.appendChild(thMetric);
+        recentDates.forEach(dateObj => {
+            const thDate = document.createElement('th');
+            thDate.textContent = dateObj.text;
+            thDate.classList.add('date-header-cell');
+            headerRow.appendChild(thDate);
+        });
+
+        const thTrend = document.createElement('th');
+        thTrend.textContent = "Trend";
+        thTrend.title = "Trend calculated via Linear Regression (Least Squares) over all displayed days."; // Updated tooltip
+        thTrend.classList.add('date-header-cell');
+        headerRow.appendChild(thTrend);
+
+        const metricsByGroup = [
+            { groupName: "Growth metrics", isExpanded: true, metrics: [
+                { key: 'population', name: 'Catchment Population', type: 'number', targetDirection: 'up' },
+                { key: '1mgusers', name: '1mg User Base (MTU)', type: 'number', targetDirection: 'up' },
+                { key: 'dailyTrafficUniqueUsers', name: 'DAU (Apps)', type: 'number', targetDirection: 'up' },
+                { key: 'Homepage QC Coverage', name: 'Homepage QC Share', type: 'number', targetDirection: 'up' },
+                { key: 'userConversionPercent', name: 'App Conversion%', format: 'percentage', decimals: 1, type: 'percentage', targetDirection: 'up' },
+                { key: 'placedOrdersDay', name: 'Placed Orders', type: 'number', targetDirection: 'up' },
+                { key: 'deliveredOrdersDay', name: 'Delivered Orders', type: 'number', targetDirection: 'up' },
+                { key: 'discountPercent', name: 'Discount%', format: 'percentage', type: 'percentage', targetDirection: 'down' },
+                { key: 'QCcoverage', name: 'QC Coverage%', format: 'percentage', decimals: 1, type: 'percentage', targetDirection: 'up' },
+                { key: 'vasPerOrder', name: 'VAS per Order', decimals: 2, type: 'currency', targetDirection: 'up' },
+                { key: 'aov', name: 'AOV', decimals: 2, type: 'currency', targetDirection: 'up' },
+            ]},
+            { groupName: "Inventory metrics", isExpanded: true, metrics: [
+                { key: 'invCoverageCart30min', name: 'Cart Page QC Coverage', type: 'number', targetDirection: 'up' },
+                { key: 'invHealthRetailAGrade', name: 'Inv Health Retail (A Subgrade)', type: 'number', targetDirection: 'up' },
+                { key: 'invHealthRetailBGrade', name: 'Inv Health Retail (B Subgrade)', type: 'number', targetDirection: 'up' },
+            ]},
+            { groupName: "Store ops metrics", isExpanded: true, metrics: [
+                { key: 'processingBreach', name: 'Processing Breach', type: 'number', targetDirection: 'down' },
+                { key: 'processingTatMinsQC', name: 'Processing TAT (in mins) - QC', format: 'minutes', type: 'time', targetDirection: 'down' },
+                { key: 'uhiPercent', name: 'UHI %', format: 'percentage', type: 'percentage', targetDirection: 'down' },
+                { key: 'pushbackPercentRetail', name: 'Pushback% (Retail Stores)', format: 'percentage', type: 'percentage', targetDirection: 'down' },
+                { key: 'locationMappingPercent', name: 'Location Mapping%', format: 'percentage', type: 'percentage', targetDirection: 'up' },
+                { key: 'pickingPutawayAdherence', name: 'Picking, putaway app adherence', format: 'percentageMaybe', type: 'percentage', targetDirection: 'up' },
+                { key: 'selfAuditAdherence', name: 'Self audit adherence', format: 'percentageMaybe', type: 'percentage', targetDirection: 'up' },
+                { key: 'regularMassPulloutAdherence', name: 'Regular/mass pullout adherence', format: 'percentageMaybe', type: 'percentage', targetDirection: 'up' },
+                { key: 'customerComplaintsPercent', name: 'Customer complaints%', format: 'percentageTarget', type: 'percentage', targetDirection: 'down' }
+            ]},
+            { groupName: "Last mile metrics", isExpanded: true, metrics: [
+                { key: 'lmBreach', name: 'LM Breach', type: 'number', targetDirection: 'down' },
+                { key: 'lmTatMinsQC', name: 'LM TAT (in mins) - QC', format: 'minutes', type: 'time', targetDirection: 'down' },
+                { key: 'partnerShare3PLPercent', name: 'Partner Share - 3PL%', format: 'percentage', type: 'percentage', targetDirection: 'up' },
+                { key: 'riderAttrition', name: 'Rider attrition', type: 'number', targetDirection: 'down' },
+                { key: 'riderEfficiency', name: 'Rider efficiency', type: 'number', targetDirection: 'up' },
+                { key: 'lmFunnelValue', name: 'LM Funnel:', isHeader: true },
+                { key: 'lokiCreatedToAllocated', name: 'Loki created --> allocated', type: 'number', targetDirection: 'down' },
+                { key: 'allocatedToPickup', name: 'allocated --> pickup', type: 'number', targetDirection: 'down' },
+                { key: 'pickupToCxLocation', name: 'pickup --> cx location', type: 'number', targetDirection: 'down' },
+                { key: 'cxLocationToDelivered', name: 'cx location --> delivered', type: 'number', targetDirection: 'down' }
+            ]}
+        ];
+
+        metricsByGroup.forEach(group => {
+            const groupHeaderRow = tbody.insertRow();
+            groupHeaderRow.classList.add('metric-group-header');
+
+            let currentExpandedState;
+            if (metricGroupStates.hasOwnProperty(group.groupName)) {
+                currentExpandedState = metricGroupStates[group.groupName];
+            } else {
+                currentExpandedState = group.isExpanded;
+                metricGroupStates[group.groupName] = currentExpandedState;
+            }
+
+            const groupNameDisplayCell = groupHeaderRow.insertCell();
+            groupNameDisplayCell.innerHTML = `<span class="toggle-icon">${currentExpandedState ? '▼' : '►'}</span> ${group.groupName}`;
+            groupNameDisplayCell.classList.add('metric-group-name-sticky-cell');
+
+            const groupNameFillerCell = groupHeaderRow.insertCell();
+            groupNameFillerCell.colSpan = recentDates.length + 1; // Covers all date columns + new Trend column
+            groupNameFillerCell.classList.add('metric-group-filler-cell');
+
+            groupHeaderRow.dataset.groupName = group.groupName;
+            groupHeaderRow.dataset.groupExpanded = currentExpandedState.toString();
+
+            groupHeaderRow.addEventListener('click', () => {
+                const isCurrentlyExpanded = groupHeaderRow.dataset.groupExpanded === 'true';
+                const newExpandedState = !isCurrentlyExpanded;
+                metricGroupStates[group.groupName] = newExpandedState;
+                groupHeaderRow.dataset.groupExpanded = newExpandedState.toString();
+                groupHeaderRow.querySelector('.toggle-icon').textContent = newExpandedState ? '▼' : '►';
+                tbody.querySelectorAll(`tr[data-metric-group="${group.groupName}"]`).forEach(row => {
+                    row.style.display = newExpandedState ? '' : 'none';
+                });
+            });
+
+            group.metrics.forEach(metricInfo => {
+                const row = tbody.insertRow();
+                row.dataset.metricGroup = group.groupName;
+                if (!currentExpandedState) row.style.display = 'none';
+
+                const cellMetricName = row.insertCell();
+                cellMetricName.textContent = metricInfo.name;
+                cellMetricName.classList.add('metric-name-cell');
+                if (metricInfo.isHeader) {
+                    cellMetricName.style.fontWeight = 'bold';
+                    cellMetricName.style.paddingLeft = '20px';
+                    cellMetricName.style.backgroundColor = 'var(--table-row-hover-bg, #f9f9f9)'; /* Dynamic background based on row */
+                }
+
+                const allNumericValuesForTrend = []; // Collect numeric values for regression
+                const allValuesForSparkline = []; // Collect values for sparkline (can include NaN for position)
+
+                // Populate cells for all 6 recent dates (T Day to T-5 Day)
+                recentDates.forEach((dateObj, index) => {
+                    const cellValue = row.insertCell();
+                    cellValue.classList.add('metric-value-cell');
+
+                    const dataForDate = catchmentMetricsData[dateObj.value] || {};
+                    // FIX: Now correctly uses catchment-specific generated data
+                    const catchmentSpecificData = dataForDate[originalCatchmentName] || unknownMetrics;
+                    let value = catchmentSpecificData[metricInfo.key];
+
+                    // Determine previous day's value for conditional formatting based on displayed columns
+                    let previousDayValue = null;
+                    if (index + 1 < recentDates.length) {
+                        const prevDateObj = recentDates[index + 1];
+                        const prevDataForDate = catchmentMetricsData[prevDateObj.value] || {};
+                        const prevCatchmentSpecificData = prevDataForDate[originalCatchmentName] || unknownMetrics;
+                        previousDayValue = prevCatchmentSpecificData[metricInfo.key];
+                    }
+
+                    if (value === 'N/A' || typeof value === 'string' && value.includes('N/A')) { // Check explicitly for 'N/A' string
+                        cellValue.textContent = 'N/A';
+                        allValuesForSparkline.unshift(NaN); // Use NaN for sparkline if N/A
+                    } else {
+                        const numericValue = Number(value);
+                        const formattedValue = formatValue(numericValue, metricInfo.format, metricInfo.decimals, metricInfo.unit);
+                        cellValue.textContent = formattedValue;
+                        
+                        allNumericValuesForTrend.unshift(numericValue); // Add to front for chronological order [T-5...T Day]
+                        allValuesForSparkline.unshift(numericValue);
+
+                        // Apply conditional formatting
+                        if (typeof numericValue === 'number' && !isNaN(numericValue) &&
+                            typeof Number(previousDayValue) === 'number' && !isNaN(Number(previousDayValue))) {
+                            const className = getConditionalClass(numericValue, Number(previousDayValue), metricInfo.targetDirection);
+                            if (className) {
+                                cellValue.classList.add('metric-value', className);
+                            }
+                        }
+                    }
+                });
+
+                // Add the Trend column
+                const trendCell = row.insertCell();
+                trendCell.classList.add('trend-cell');
+
+                // Generate sparkline (values are already T-5, T-4, ..., T Day)
+                const sparklineValuesToDraw = allValuesForSparkline.filter(v => typeof v === 'number' && !isNaN(v));
+                trendCell.innerHTML = generateSparkline(sparklineValuesToDraw);
+
+                // Trend calculation using Linear Regression over ALL 6 displayed days
+                const trendSlope = calculateLinearRegressionTrend(allNumericValuesForTrend.filter(v => typeof v === 'number' && !isNaN(v))); // Pass chrono-ordered numeric values
+
+                if (trendSlope !== null && !isNaN(trendSlope)) {
+                    let trendText = formatValue(trendSlope, metricInfo.format, 2, metricInfo.unit); // Format slope for display
+                    let arrowIcon = '';
+                    let arrowClass = 'flat';
+
+                    if (trendSlope > 0.001) { // Check for small positive values
+                        arrowIcon = '▲';
+                        arrowClass = 'up';
+                    } else if (trendSlope < -0.001) { // Check for small negative values
+                        arrowIcon = '▼';
+                        arrowClass = 'down';
+                    } else {
+                        arrowIcon = '▬';
+                        trendText = '0'; // For very small slopes, just show 0
+                    }
+                    trendCell.innerHTML += `<span class="trend-arrow ${arrowClass}">${arrowIcon} ${trendText}</span>`;
+                } else {
+                    trendCell.innerHTML += `<span class="trend-arrow flat">N/A</span>`;
+                }
+            });
+        });
+    }
+
+</script>
+</body>
+</html>
