@@ -339,6 +339,9 @@
         .plane-icon {
             font-size: 24px;
             line-height: 24px;
+            transform-origin: center center;
+            transition: transform 0.3s linear;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -949,9 +952,18 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         const start = cityPoints[idx];
         const end = cityPoints[nextIdx];
         planeMarker.setLatLng([start.lat, start.lng]);
+        rotatePlaneTowards(start, end);
         setTimeout(() => {
             animatePlane(start, end, 5000, () => loopCities(nextIdx));
         }, 30000);
+    }
+
+    function rotatePlaneTowards(start, end) {
+        const bearing = calculateBearing(start, end);
+        const el = planeMarker.getElement();
+        if (el) {
+            el.style.transform = `rotate(${bearing}deg)`;
+        }
     }
 
     function animatePlane(start, end, duration, onDone) {
@@ -970,6 +982,18 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             }
         }
         requestAnimationFrame(step);
+    }
+
+    function calculateBearing(start, end) {
+        const lat1 = start.lat * Math.PI / 180;
+        const lon1 = start.lng * Math.PI / 180;
+        const lat2 = end.lat * Math.PI / 180;
+        const lon2 = end.lng * Math.PI / 180;
+
+        const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+        const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+        const brng = Math.atan2(y, x) * 180 / Math.PI;
+        return (brng + 360) % 360;
     }
 
     const unknownMetrics = {
