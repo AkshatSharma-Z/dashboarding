@@ -334,6 +334,12 @@
 
         /* Hide rows for collapsed categories */
         .info-table tbody tr.collapsed { display: none; }
+
+        /* Plane marker icon */
+        .plane-icon {
+            font-size: 24px;
+            line-height: 24px;
+        }
     </style>
 </head>
 <body>
@@ -907,6 +913,65 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         return newMetrics;
     }
 
+    // -------- Plane Travel Between Cities ---------
+    const cityPoints = [
+        { name: "Bengaluru", lat: 12.9719, lng: 77.5937 },
+        { name: "Noida", lat: 28.58, lng: 77.33 },
+        { name: "Jaipur", lat: 26.9124, lng: 75.7873 },
+        { name: "Lucknow", lat: 26.8467, lng: 80.9462 },
+        { name: "Kolkata", lat: 22.5726, lng: 88.3639 },
+        { name: "Ghaziabad", lat: 28.6692, lng: 77.4538 },
+        { name: "Faridabad", lat: 28.4112, lng: 77.3132 },
+        { name: "New Delhi", lat: 28.6358, lng: 77.2245 },
+        { name: "Mumbai", lat: 19.0760, lng: 72.8777 },
+        { name: "Hyderabad", lat: 17.3850, lng: 78.4867 },
+        { name: "Chennai", lat: 13.0827, lng: 80.2707 },
+        { name: "Visakhapatnam", lat: 17.6868, lng: 83.2185 },
+        { name: "Bhubaneswar", lat: 20.2961, lng: 85.8245 },
+        { name: "Kanpur", lat: 26.4499, lng: 80.3319 },
+        { name: "Guwahati", lat: 26.1445, lng: 91.7362 },
+        { name: "Ranchi", lat: 23.3441, lng: 85.3096 },
+        { name: "Patna", lat: 25.5941, lng: 85.1376 },
+        { name: "Dehradun", lat: 30.3165, lng: 78.0322 },
+        { name: "Varanasi", lat: 25.3176, lng: 82.9739 },
+    ];
+
+    let planeMarker;
+
+    function initPlaneJourney() {
+        const planeIcon = L.divIcon({ html: '✈️', className: 'plane-icon' });
+        planeMarker = L.marker([cityPoints[0].lat, cityPoints[0].lng], { icon: planeIcon }).addTo(map);
+        loopCities(0);
+    }
+
+    function loopCities(idx) {
+        const nextIdx = (idx + 1) % cityPoints.length;
+        const start = cityPoints[idx];
+        const end = cityPoints[nextIdx];
+        planeMarker.setLatLng([start.lat, start.lng]);
+        setTimeout(() => {
+            animatePlane(start, end, 5000, () => loopCities(nextIdx));
+        }, 30000);
+    }
+
+    function animatePlane(start, end, duration, onDone) {
+        const startTime = performance.now();
+        map.flyTo([end.lat, end.lng], map.getZoom(), { duration: duration / 1000 });
+
+        function step() {
+            const t = Math.min((performance.now() - startTime) / duration, 1);
+            const lat = start.lat + (end.lat - start.lat) * t;
+            const lng = start.lng + (end.lng - start.lng) * t;
+            planeMarker.setLatLng([lat, lng]);
+            if (t < 1) {
+                requestAnimationFrame(step);
+            } else {
+                onDone();
+            }
+        }
+        requestAnimationFrame(step);
+    }
+
     const unknownMetrics = {
         title: "Unknown Catchment Metrics", placedOrdersDay: "N/A", deliveredOrdersDay: "N/A", dailyTrafficUniqueUsers: "N/A", userConversionPercent: "N/A", totalTransactors: "N/A", discountPercent: "N/A", vasPerOrder: "N/A", aov: "N/A", invCoverageCart30min: "N/A", invCoverageCart60minDash: "N/A", invCoverageCart60min: "N/A", invHealthRetailAGrade: "N/A", invHealthRetailBGrade: "N/A", processingBreach: "N/A", processingTatMinsQC: "N/A", uhiPercent: "N/A", pushbackPercentRetail: "N/A", locationMappingPercent: "N/A", pickingPutawayAdherence: "N/A", selfAuditAdherence: "N/A", regularMassPulloutAdherence: "N/A", customerComplaintsPercent: "N/A", lmBreach: "N/A", lmTatMinsQC: "N/A", partnerShare3PLPercent: "N/A", lmFunnelValue: "N/A", lokiCreatedToAllocated: "N/A", allocatedToPickup: "N/A", pickupToCxLocation: "N/A", cxLocationToDelivered: "N/A", riderAttrition: "N/A", riderEfficiency: "N/A"
     };
@@ -1047,6 +1112,8 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         plotStoreMarkers(); // No filtering needed here now, all types are always visible
         initializeResizers(); // Initialize only horizontal resizer now
         updateRightPanel("ALL"); // Initial load with overall metrics
+
+        initPlaneJourney(); // Start plane animation between cities
 
         // Event listener for the "View Overall Summary" button
         document.getElementById('reset-view-button').addEventListener('click', resetHighlightAndFitAll);
