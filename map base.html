@@ -334,15 +334,6 @@
 
         /* Hide rows for collapsed categories */
         .info-table tbody tr.collapsed { display: none; }
-
-        /* Plane marker icon */
-        .plane-icon {
-            font-size: 24px;
-            line-height: 24px;
-            transform-origin: center center;
-            transition: transform 0.3s linear;
-            pointer-events: none;
-        }
     </style>
 </head>
 <body>
@@ -938,72 +929,18 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         { name: "Dehradun", lat: 30.3165, lng: 78.0322 },
         { name: "Varanasi", lat: 25.3176, lng: 82.9739 },
     ];
-
-    let planeMarker;
-
-    function initPlaneJourney() {
-        const planeIcon = L.divIcon({ html: '✈️', className: 'plane-icon' });
-        planeMarker = L.marker([cityPoints[0].lat, cityPoints[0].lng], { icon: planeIcon }).addTo(map);
-        loopCities(0);
+    
+    function initCityPan() {
+        setTimeout(() => panToCity(0), 30000);
     }
 
-    function loopCities(idx) {
+    function panToCity(idx) {
         const nextIdx = (idx + 1) % cityPoints.length;
-        const start = cityPoints[idx];
-        const end = cityPoints[nextIdx];
-        planeMarker.setLatLng([start.lat, start.lng]);
-        rotatePlaneTowards(start, end);
-        setTimeout(() => {
-            animatePlane(start, end, 5000, () => loopCities(nextIdx));
-        }, 30000);
+        const next = cityPoints[nextIdx];
+        map.flyTo([next.lat, next.lng], map.getZoom(), { duration: 5 });
+        setTimeout(() => panToCity(nextIdx), 35000);
     }
 
-    function rotatePlaneTowards(start, end) {
-        const bearing = calculateBearing(start, end);
-        const el = planeMarker.getElement();
-        if (el) {
-            el.style.transform = `rotate(${bearing}deg)`;
-        }
-    }
-
-    function animatePlane(start, end, duration, onDone) {
-        const startTime = performance.now();
-        map.flyTo([end.lat, end.lng], map.getZoom(), { duration: duration / 1000 });
-
-        let prev = { lat: start.lat, lng: start.lng };
-
-        function step(now) {
-            const t = Math.min((now - startTime) / duration, 1);
-            const lat = start.lat + (end.lat - start.lat) * t;
-            const lng = start.lng + (end.lng - start.lng) * t;
-            planeMarker.setLatLng([lat, lng]);
-
-            // update rotation based on incremental movement
-            const bearing = calculateBearing(prev, { lat, lng });
-            const el = planeMarker.getElement();
-            if (el) el.style.transform = `rotate(${bearing}deg)`;
-            prev = { lat, lng };
-
-            if (t < 1) {
-                requestAnimationFrame(step);
-            } else {
-                onDone();
-            }
-        }
-        requestAnimationFrame(step);
-    }
-
-    function calculateBearing(start, end) {
-        const lat1 = start.lat * Math.PI / 180;
-        const lon1 = start.lng * Math.PI / 180;
-        const lat2 = end.lat * Math.PI / 180;
-        const lon2 = end.lng * Math.PI / 180;
-
-        const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
-        const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
-        const brng = Math.atan2(y, x) * 180 / Math.PI;
-        return (brng + 360) % 360;
-    }
 
     const unknownMetrics = {
         title: "Unknown Catchment Metrics", placedOrdersDay: "N/A", deliveredOrdersDay: "N/A", dailyTrafficUniqueUsers: "N/A", userConversionPercent: "N/A", totalTransactors: "N/A", discountPercent: "N/A", vasPerOrder: "N/A", aov: "N/A", invCoverageCart30min: "N/A", invCoverageCart60minDash: "N/A", invCoverageCart60min: "N/A", invHealthRetailAGrade: "N/A", invHealthRetailBGrade: "N/A", processingBreach: "N/A", processingTatMinsQC: "N/A", uhiPercent: "N/A", pushbackPercentRetail: "N/A", locationMappingPercent: "N/A", pickingPutawayAdherence: "N/A", selfAuditAdherence: "N/A", regularMassPulloutAdherence: "N/A", customerComplaintsPercent: "N/A", lmBreach: "N/A", lmTatMinsQC: "N/A", partnerShare3PLPercent: "N/A", lmFunnelValue: "N/A", lokiCreatedToAllocated: "N/A", allocatedToPickup: "N/A", pickupToCxLocation: "N/A", cxLocationToDelivered: "N/A", riderAttrition: "N/A", riderEfficiency: "N/A"
@@ -1145,9 +1082,7 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         plotStoreMarkers(); // No filtering needed here now, all types are always visible
         initializeResizers(); // Initialize only horizontal resizer now
         updateRightPanel("ALL"); // Initial load with overall metrics
-
-        initPlaneJourney(); // Start plane animation between cities
-
+        initCityPan(); // Start panning between cities
         // Event listener for the "View Overall Summary" button
         document.getElementById('reset-view-button').addEventListener('click', resetHighlightAndFitAll);
     });
