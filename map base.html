@@ -970,11 +970,20 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         const startTime = performance.now();
         map.flyTo([end.lat, end.lng], map.getZoom(), { duration: duration / 1000 });
 
-        function step() {
-            const t = Math.min((performance.now() - startTime) / duration, 1);
+        let prev = { lat: start.lat, lng: start.lng };
+
+        function step(now) {
+            const t = Math.min((now - startTime) / duration, 1);
             const lat = start.lat + (end.lat - start.lat) * t;
             const lng = start.lng + (end.lng - start.lng) * t;
             planeMarker.setLatLng([lat, lng]);
+
+            // update rotation based on incremental movement
+            const bearing = calculateBearing(prev, { lat, lng });
+            const el = planeMarker.getElement();
+            if (el) el.style.transform = `rotate(${bearing}deg)`;
+            prev = { lat, lng };
+
             if (t < 1) {
                 requestAnimationFrame(step);
             } else {
