@@ -66,7 +66,7 @@
         #catchment-legend {
             bottom: 10px;
             left: 10px;
-            width: 200px; /* Fixed width to make it compact */
+            width: 150px; /* Smaller since we only show 4 city names */
         }
 
         #store-legend {
@@ -910,35 +910,71 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
     // -------- Plane Travel Between Cities ---------
     const cityPoints = [
         { name: "Bengaluru", lat: 12.9719, lng: 77.5937 },
-        { name: "Noida", lat: 28.58, lng: 77.33 },
         { name: "Jaipur", lat: 26.9124, lng: 75.7873 },
-        { name: "Lucknow", lat: 26.8467, lng: 80.9462 },
-        { name: "Kolkata", lat: 22.5726, lng: 88.3639 },
-        { name: "Ghaziabad", lat: 28.6692, lng: 77.4538 },
-        { name: "Faridabad", lat: 28.4112, lng: 77.3132 },
-        { name: "New Delhi", lat: 28.6358, lng: 77.2245 },
-        { name: "Mumbai", lat: 19.0760, lng: 72.8777 },
-        { name: "Hyderabad", lat: 17.3850, lng: 78.4867 },
-        { name: "Chennai", lat: 13.0827, lng: 80.2707 },
         { name: "Visakhapatnam", lat: 17.6868, lng: 83.2185 },
-        { name: "Bhubaneswar", lat: 20.2961, lng: 85.8245 },
-        { name: "Kanpur", lat: 26.4499, lng: 80.3319 },
-        { name: "Guwahati", lat: 26.1445, lng: 91.7362 },
-        { name: "Ranchi", lat: 23.3441, lng: 85.3096 },
+        { name: "Mumbai", lat: 19.0760, lng: 72.8777 },
         { name: "Patna", lat: 25.5941, lng: 85.1376 },
+        { name: "Hyderabad", lat: 17.3850, lng: 78.4867 },
         { name: "Dehradun", lat: 30.3165, lng: 78.0322 },
+        { name: "Chennai", lat: 13.0827, lng: 80.2707 },
+        { name: "Kanpur", lat: 26.4499, lng: 80.3319 },
+        { name: "Kolkata", lat: 22.5726, lng: 88.3639 },
+        { name: "Ahmedabad", lat: 23.0225, lng: 72.5714 },
+        { name: "Guwahati", lat: 26.1445, lng: 91.7362 },
+        { name: "Faridabad", lat: 28.4112, lng: 77.3132 },
+        { name: "Ranchi", lat: 23.3441, lng: 85.3096 },
+        { name: "Noida", lat: 28.58, lng: 77.33 },
+        { name: "Bhuvneshwar", lat: 20.2961, lng: 85.8245 },
         { name: "Varanasi", lat: 25.3176, lng: 82.9739 },
+        { name: "Ghaziabad", lat: 28.6692, lng: 77.4538 },
+        { name: "New Delhi", lat: 28.6358, lng: 77.2245 },
+        { name: "Gurgaon", lat: 28.4595, lng: 77.0266 }
     ];
     
+    let currentCityIndex = 0;
+    let countdown = 30;
+    let countdownTimer = null;
+
+    function startCountdown() {
+        if (countdownTimer) clearInterval(countdownTimer);
+        countdownTimer = setInterval(() => {
+            countdown--;
+            updateCityLegend();
+            if (countdown <= 0) clearInterval(countdownTimer);
+        }, 1000);
+    }
+
+    function updateCityLegend() {
+        const currentElem = document.getElementById('current-city');
+        const nextElem = document.getElementById('next-cities');
+        if (!currentElem || !nextElem) return;
+        currentElem.textContent = `${cityPoints[currentCityIndex].name} ${countdown} sec`;
+        let upcomingHtml = '';
+        for (let i = 1; i <= 3; i++) {
+            const idx = (currentCityIndex + i) % cityPoints.length;
+            upcomingHtml += `<li>${cityPoints[idx].name}</li>`;
+        }
+        nextElem.innerHTML = upcomingHtml;
+    }
+
     function initCityPan() {
+        updateCityLegend();
+        startCountdown();
         setTimeout(() => panToCity(0), 30000);
     }
 
     function panToCity(idx) {
+        clearInterval(countdownTimer);
         const nextIdx = (idx + 1) % cityPoints.length;
         const next = cityPoints[nextIdx];
         map.flyTo([next.lat, next.lng], map.getZoom(), { duration: 5 });
-        setTimeout(() => panToCity(nextIdx), 35000);
+        setTimeout(() => {
+            currentCityIndex = nextIdx;
+            countdown = 30;
+            updateCityLegend();
+            startCountdown();
+            setTimeout(() => panToCity(nextIdx), 30000);
+        }, 5000);
     }
 
 
@@ -1162,30 +1198,16 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
     function createFloatingLegends() {
         const mapDiv = document.getElementById('map');
 
-        // Catchment Legend
+        // City Travel Legend
         const catchmentLegendDiv = document.createElement('div');
         catchmentLegendDiv.id = 'catchment-legend';
         catchmentLegendDiv.className = 'map-legend';
-        let catchmentLegendHtml = '<h4>Catchment Colors</h4>';
-        allCatchmentNames.filter(name => !name.includes("Unknown Catchment")).sort().forEach(name => {
-            const color = catchmentColors[name] || '#A9A9A9';
-            catchmentLegendHtml += `
-                <div class="legend-item">
-                    <span class="legend-color-swatch" style="background-color: ${color};"></span>
-                    <span>${formatCatchmentNameForDisplay(name)}</span>
-                </div>
-            `;
-        });
-        // Add Unknown Catchment at the end if it's specifically relevant
-        if (catchmentColors["Unknown Catchment"]) {
-            catchmentLegendHtml += `
-                <div class="legend-item">
-                    <span class="legend-color-swatch" style="background-color: ${catchmentColors["Unknown Catchment"]};"></span>
-                    <span>Unknown Catchment</span>
-                </div>
-            `;
-        }
-        catchmentLegendDiv.innerHTML = catchmentLegendHtml;
+        catchmentLegendDiv.innerHTML = `
+            <h4>Current City</h4>
+            <div id="current-city"></div>
+            <h4>Next Cities</h4>
+            <ul id="next-cities" style="list-style:none;padding-left:0;margin:0"></ul>
+        `;
         mapDiv.appendChild(catchmentLegendDiv);
 
         // Store Legend
