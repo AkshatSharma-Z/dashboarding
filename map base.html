@@ -15,414 +15,272 @@
     <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
 
     <style>
-        /* BASE LAYOUT: Now a single column 2x1 CSS Grid */
-        body {
-            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: grid;
-            grid-template-columns: 1fr;
-            grid-template-rows: 60px 1fr 1fr;
-            height: 100vh;
-            overflow: hidden;
-            background: linear-gradient(#ffffff, #f0f2f5);
-            gap: 0;
-            box-sizing: border-box;
-        }
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 60px 1fr 1fr;
+    height: 100vh;
+    overflow: hidden;
+    background: linear-gradient(#1a1a1a, #121212);
+    color: #f5f5f5;
+    gap: 0;
+    box-sizing: border-box;
+}
 
-        /* --- App Header --- */
-        #app-header {
-            grid-column: 1 / 2;
-            grid-row: 1 / 2;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 0 15px;
-            background: linear-gradient(90deg, #ff671d, #ff9224);
-            color: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            z-index: 1000;
-        }
-        #brand-logo {
-            font-size: 1.4em;
-            font-weight: 600;
-            color: #fff;
-        }
-        #app-header h1 {
-            font-size: 1.4em;
-            margin: 0;
-            font-weight: 600;
-        }
+#app-header {
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 15px;
+    background: linear-gradient(90deg, #ff5c00, #ff671d);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    z-index: 1000;
+}
+#brand-logo {
+    font-size: 1.4em;
+    font-weight: 600;
+    color: #fff;
+}
+#app-header h1 {
+    font-size: 1.4em;
+    margin: 0;
+    font-weight: 600;
+}
 
-        /* --- REMOVED: Legends Panel and Vertical Resizer --- */
-        /* These CSS rules are now removed as per requirements */
+#map {
+    grid-column: 1 / 2;
+    grid-row: 2 / 3;
+    height: 100%;
+    width: 100%;
+    z-index: 1;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    box-sizing: border-box;
+    background-color: #ffffff;
+    margin: 10px;
+    margin-bottom: 5px;
+    position: relative;
+}
 
-        /* --- Main Map Area (Now spans full width) --- */
-        #map {
-            grid-column: 1 / 2;
-            grid-row: 2 / 3;
-            height: 100%;
-            width: 100%;
-            z-index: 1;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            box-sizing: border-box;
-            background-color: #ffffff; /* Ensure map background is white before tiles load */
-            margin-left: 10px; /* Consistent margins */
-            margin-right: 10px;
-            margin-top: 10px;
-            margin-bottom: 5px; /* Space from horizontal resizer */
-            position: relative; /* Crucial for positioning floating legends */
-        }
+.map-legend {
+    position: absolute;
+    background: rgba(255,255,255,0.1);
+    padding: 10px;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1000;
+    font-size: 0.95em;
+    max-height: 250px;
+    overflow-y: auto;
+    color: #dcdcdc;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+#catchment-legend { bottom: 10px; left: 10px; width: 165px; }
+#store-legend { bottom: 10px; right: 10px; width: 150px; }
+.map-legend h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #f5f5f5;
+    font-size: 1em;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    padding-bottom: 5px;
+}
+.legend-item { display: flex; align-items: center; margin-bottom: 8px; line-height: 1.3; }
+.legend-item:last-child { margin-bottom: 0; }
+#catchment-legend li { cursor: pointer; }
+#catchment-legend li:hover { text-decoration: underline; }
+.legend-color-swatch, .legend-icon {
+    width: 16px; height: 16px; border-radius: 3px; margin-right: 8px;
+    border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; box-sizing: border-box;
+}
+.legend-icon.triangle { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); border-radius: 0; }
+.legend-icon.circle { border-radius: 50%; }
+.legend-icon.square { border-radius: 0; }
 
-        /* --- Floating Map Legends --- */
-        .map-legend {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 6px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            z-index: 1000;
-            font-size: 0.95em;
-            max-height: 250px;
-            overflow-y: auto;
-        }
+#horizontal-resizer {
+    grid-column: 1 / 2;
+    grid-row: 2 / 3;
+    height: 10px;
+    cursor: ns-resize;
+    background-color: transparent;
+    z-index: 10;
+    align-self: end;
+    transform: translateY(5px);
+    margin: 0 10px;
+}
+#horizontal-resizer:hover { background-color: rgba(0, 123, 255, 0.1); }
+#vertical-resizer {
+    width: 6px;
+    cursor: ew-resize;
+    background-color: transparent;
+    flex-shrink: 0;
+}
+#vertical-resizer:hover { background-color: rgba(0, 123, 255, 0.1); }
 
-        #catchment-legend {
-            bottom: 10px;
-            left: 10px;
-            width: 165px; /* 10% bigger */
-        }
+.leaflet-pane.leaflet-overlay-pane path { stroke-width: 1px; }
+.leaflet-popup-content-wrapper { border-radius: 5px; }
+.leaflet-popup-content { margin: 10px !important; font-size: 0.9em; line-height: 1.4; }
+.leaflet-popup-content b { color: #f5f5f5; }
+.custom-leaflet-div-icon { background: transparent !important; border: none !important; box-shadow: none !important; margin-left: 0 !important; margin-top: 0 !important; }
+.custom-leaflet-div-icon > div { box-sizing: content-box !important; }
 
-        #store-legend {
-            bottom: 10px;
-            right: 10px;
-            width: 150px; /* Fixed width to make it compact */
-        }
+#right-panel {
+    grid-column: 1 / 2;
+    grid-row: 3 / 4;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    overflow: hidden;
+    padding: 15px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    position: relative;
+    margin: 5px 10px 10px;
+}
+.panel-toggle { display: none !important; }
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px 15px;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px 6px 0 0;
+    flex-shrink: 0;
+    color: #f5f5f5;
+}
+.panel-header h3 { margin: 0; font-size: 1.2em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel-header small { white-space: nowrap; font-size: 0.9em; color: #dcdcdc; }
+.panel-header button {
+    background-color: #ff5c00;
+    color: #fff;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s ease;
+    margin-left: 15px;
+}
+.panel-header button:hover { background-color: #e65500; }
 
-        .map-legend h4 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            color: #343a40;
-            font-size: 1em;
-            text-transform: uppercase;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
-        }
+.right-panel-content { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
+.metrics-table-container { overflow: hidden; width: 100%; flex-grow: 1; }
+.metrics-table-wrapper {
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: auto;
+    padding-right: 1px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.metrics-section { flex: 2; display: flex; flex-direction: column; }
+.summary-section { flex: 3; display: flex; flex-direction: column; }
+.summary-grid {
+    flex-grow: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 10px;
+}
+.summary-box {
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: background-color 0.3s ease;
+}
+.summary-box.up { background: rgba(25,135,84,0.2); }
+.summary-box.down { background: rgba(220,53,69,0.2); }
+.summary-box .metric-title { font-weight: 600; margin-bottom: 5px; display:flex; align-items:center; gap:4px; color:#f5f5f5; }
+.summary-box .metric-value { font-size: 1.2em; font-weight: bold; color:#f5f5f5; }
+.summary-box .metric-trend { height: 20px; }
 
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-            line-height: 1.3;
-        }
-        .legend-item:last-child {
-            margin-bottom: 0;
-        }
+.info-table {
+    width: 100%;
+    min-width: max-content;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9em;
+    margin-bottom: 1px;
+    background-color: rgba(255,255,255,0.05);
+    color: #dcdcdc;
+}
+.info-table th, .info-table td {
+    padding: 12px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    text-align: left;
+    word-wrap: break-word;
+    box-sizing: border-box;
+    vertical-align: middle;
+}
+.info-table th {
+    background-color: rgba(255,255,255,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    font-weight: 600;
+    color: #f5f5f5;
+}
+.info-table th:first-child { border-top-left-radius: 6px; }
+.info-table th:last-child { border-top-right-radius: 6px; }
+.info-table tbody tr:last-child td { border-bottom: none; }
+.info-table tbody tr:nth-child(even) { background-color: rgba(255,255,255,0.03); }
+.info-table tbody tr:hover td { background-color: rgba(255,255,255,0.08); }
+.info-table th.metric-header-cell {
+    position: sticky; left: 0; background-color: rgba(255,255,255,0.1); z-index: 6; min-width: 250px; width: 250px; text-align: left;
+}
+.info-table td.metric-name-cell {
+    position: sticky; left: 0; background-color: inherit; z-index: 4; min-width: 250px; width: 250px; font-weight: normal; color: #dcdcdc;
+}
+.info-table tbody tr:hover td.metric-name-cell { background-color: inherit; }
+.info-table th.date-header-cell { text-align: center; min-width: 80px; }
+.info-table td.metric-value-cell { text-align: center; min-width: 80px; font-weight: 500; }
+.info-table tr.metric-group-header { cursor: pointer; background-color: rgba(255,255,255,0.08); }
+.info-table td.metric-group-name-sticky-cell {
+    font-weight: bold; background-color: rgba(255,255,255,0.08); text-align: left !important; padding-left: 15px; position: sticky; left: 0; z-index: 5; min-width: 250px; width: 250px; border-bottom: 1px solid rgba(255,255,255,0.1); border-top: 1px solid rgba(255,255,255,0.1); color: #f5f5f5;
+}
+.info-table td.metric-group-filler-cell {
+    background-color: rgba(255,255,255,0.08); border-bottom: 1px solid rgba(255,255,255,0.1); border-top: 1px solid rgba(255,255,255,0.1);
+}
+.info-table tr.metric-group-header:hover td { background-color: rgba(255,255,255,0.12); }
+.info-table td.metric-group-name-sticky-cell .toggle-icon {
+    display: inline-block; margin-right: 10px; font-size: 0.9em; width: 1em; text-align: center; transition: transform 0.2s ease-in-out; color: #dcdcdc;
+}
+.metric-value.good { background-color: rgba(25,135,84,0.2); color: #3fc37c; font-weight: 600; }
+.metric-value.bad { background-color: rgba(220,53,69,0.2); color: #f26c6c; font-weight: 600; }
+.metric-value.neutral { background-color: rgba(255,193,7,0.25); color: #ffd663; font-weight: 600; }
+.trend-cell { display: flex; align-items: center; justify-content: center; gap: 10px; min-width: 130px; height: 35px; }
+.sparkline { width: 60px; height: 25px; vertical-align: middle; flex-shrink: 0; }
+.trend-arrow { font-size: 0.9em; font-weight: bold; flex-shrink: 0; display: flex; align-items: center; gap:4px; }
+.trend-arrow.up { color: #3fc37c; }
+.trend-arrow.down { color: #f26c6c; }
+.trend-arrow.flat { color: #dcdcdc; }
+.info-table tbody tr.collapsed { display: none; }
+</style>
 
-        #catchment-legend li {
-            cursor: pointer;
-        }
-
-        #catchment-legend li:hover {
-            text-decoration: underline;
-        }
-
-        .legend-color-swatch, .legend-icon {
-            width: 16px;
-            height: 16px;
-            border-radius: 3px;
-            margin-right: 8px;
-            border: 1px solid #cccccc;
-            flex-shrink: 0;
-            box-sizing: border-box;
-        }
-
-        .legend-icon.triangle { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); border-radius: 0; }
-        .legend-icon.circle { border-radius: 50%; }
-        .legend-icon.square { border-radius: 0; }
-
-
-        /* --- Horizontal Resizer (unchanged functionality) --- */
-        #horizontal-resizer {
-            grid-column: 1 / 2;
-            grid-row: 2 / 3;
-            height: 10px; /* Make it visually grabable */
-            cursor: ns-resize;
-            background-color: transparent; /* Initially transparent */
-            z-index: 10; /* Above map */
-            align-self: end; /* Align to the bottom edge of its grid cell */
-            transform: translateY(5px); /* Center it over the map's bottom border */
-            margin-left: 10px; /* Match map's left margin */
-            margin-right: 10px; /* Match map's right margin */
-        }
-        #horizontal-resizer:hover {
-            background-color: rgba(0, 123, 255, 0.1); /* Highlight on hover */
-        }
-
-        /* Vertical resizer between metrics and summary sections */
-        #vertical-resizer {
-            width: 6px;
-            cursor: ew-resize;
-            background-color: transparent;
-            flex-shrink: 0;
-        }
-        #vertical-resizer:hover {
-            background-color: rgba(0, 123, 255, 0.1);
-        }
-
-
-        /* Leaflet custom styles for map overlays */
-        .leaflet-pane.leaflet-overlay-pane path { stroke-width: 1px; }
-        .leaflet-popup-content-wrapper { border-radius: 5px; }
-        .leaflet-popup-content { margin: 10px !important; font-size: 0.9em; line-height: 1.4; }
-        .leaflet-popup-content b { color: #333; }
-        .custom-leaflet-div-icon { background: transparent !important; border: none !important; box-shadow: none !important; margin-left: 0px !important; margin-top: 0px !important; }
-        .custom-leaflet-div-icon > div { box-sizing: content-box !important; }
-
-
-        /* --- Right Panel (Overall Metrics - now spans full width) --- */
-        #right-panel {
-            grid-column: 1 / 2;
-            grid-row: 3 / 4;
-            background: rgba(255, 255, 255, 0.35); /* glassmorphic look */
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-            overflow: hidden; /* For table's internal scroll */
-            padding: 15px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: row;
-            gap: 15px;
-            position: relative; /* For consistency */
-            margin-left: 10px; /* Consistent margins */
-            margin-right: 10px;
-            margin-bottom: 10px;
-            margin-top: 5px; /* Space from horizontal resizer */
-        }
-
-        /* Removed any panel toggle buttons as panels are always visible */
-        .panel-toggle { display: none !important; }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding: 10px 15px;
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 6px 6px 0 0;
-            flex-shrink: 0;
-        }
-        .panel-header h3 { margin: 0; font-size: 1.2em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #343a40;}
-        .panel-header small { white-space: nowrap; font-size: 0.9em; color: #6c757d;}
-        .panel-header button {
-            background-color: #ff671d;
-            color: #fff;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: background-color 0.2s ease;
-            margin-left: 15px;
-        }
-        .panel-header button:hover {
-            background-color: #e65c15;
-        }
-
-        .right-panel-content {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-            overflow: hidden; /* Child table wrapper manages its own scroll */
-        }
-
-        .metrics-table-container {
-            overflow: hidden;
-            width: 100%;
-            flex-grow: 1;
-        }
-        .metrics-table-wrapper {
-            max-height: 100%; /* Important for vertical scrolling table */
-            overflow-y: auto;
-            overflow-x: auto; /* Allow horizontal scroll for wide tables */
-            padding-right: 1px; /* To prevent scrollbar from hiding content */
-            border-radius: 6px; /* Apply border-radius to the wrapper */
-            border: 1px solid #e9ecef; /* Subtle border for the whole table view */
-        }
-
-        .metrics-section {
-            flex: 2;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .summary-section {
-            flex: 3;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .summary-grid {
-            flex-grow: 1;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 10px;
-        }
-
-        .summary-box {
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 6px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-        }
-        .summary-box.up { background: rgba(209, 231, 221, 0.5); }
-        .summary-box.down { background: rgba(248, 215, 218, 0.5); }
-        .summary-box .metric-title { font-weight: 600; margin-bottom: 5px; display:flex; align-items:center; gap:4px; }
-        .summary-box .metric-value { font-size: 1.2em; font-weight: bold; }
-        .summary-box .metric-trend { height: 20px; }
-
-        /* --- Metrics Table Styles (Enhanced for appeal) --- */
-        .info-table {
-            width: 100%;
-            min-width: max-content; /* Allows table to grow if content is wide */
-            border-collapse: separate; /* For rounded corners on cells */
-            border-spacing: 0;
-            font-size: 0.9em;
-            margin-bottom: 1px;
-            background-color: #ffffff; /* Ensure background consistency */
-        }
-        .info-table th, .info-table td {
-            padding: 12px 18px; /* Increased padding */
-            border-bottom: 1px solid #f0f2f5; /* Lighter border for rows */
-            text-align: left;
-            word-wrap: break-word;
-            box-sizing: border-box;
-            vertical-align: middle; /* Align content vertically */
-        }
-
-        .info-table th {
-            background-color: #e9ecef; /* Slightly darker header background */
-            position: sticky;
-            top: 0;
-            z-index: 5;
-            font-weight: 600;
-            color: #495057;
-            /* border-top: 1px solid #e9ecef; - Removed for cleaner look with wrapper border */
-        }
-        .info-table th:first-child { border-top-left-radius: 6px; }
-        .info-table th:last-child { border-top-right-radius: 6px; }
-
-        .info-table tbody tr:last-child td { border-bottom: none; }
-        .info-table tbody tr:nth-child(even) { background-color: #fbfbfc; } /* Subtle zebra striping */
-        .info-table tbody tr:hover td { background-color: #f0f4f7; } /* Hover effect for rows */
-
-        .info-table th.metric-header-cell {
-            position: sticky;
-            left: 0;
-            background-color: #e9ecef; /* Match header background */
-            z-index: 6;
-            min-width: 250px; /* Slightly wider for metric names */
-            width: 250px;
-            text-align: left;
-        }
-        .info-table td.metric-name-cell {
-            position: sticky;
-            left: 0;
-            background-color: inherit; /* Inherit from row for zebra striping */
-            z-index: 4;
-            min-width: 250px;
-            width: 250px;
-            font-weight: normal;
-            color: #343a40;
-        }
-        .info-table tbody tr:hover td.metric-name-cell { background-color: inherit; } /* Ensure hover works with sticky */
-
-
-        .info-table th.date-header-cell { text-align: center; min-width: 80px; } /* Wider date columns */
-        .info-table td.metric-value-cell { text-align: center; min-width: 80px; font-weight: 500;} /* Center values */
-
-        .info-table tr.metric-group-header { cursor: pointer; background-color: #dee2e6; } /* Darker group header */
-        .info-table td.metric-group-name-sticky-cell {
-            font-weight: bold;
-            background-color: #dee2e6; /* Match header background */
-            text-align: left !important;
-            padding-left: 15px; /* Slightly more padding */
-            position: sticky;
-            left: 0;
-            z-index: 5;
-            min-width: 250px;
-            width: 250px;
-            border-bottom: 1px solid #c9d0d6; /* Stronger border for separation */
-            border-top: 1px solid #c9d0d6;
-            color: #343a40;
-        }
-        .info-table td.metric-group-filler-cell {
-            background-color: #dee2e6;
-            border-bottom: 1px solid #c9d0d6;
-            border-top: 1px solid #c9d0d6;
-        }
-        .info-table tr.metric-group-header:hover td { background-color: #c9d0d6; } /* Hover for group headers */
-        .info-table td.metric-group-name-sticky-cell .toggle-icon {
-            display: inline-block;
-            margin-right: 10px; /* More space */
-            font-size: 0.9em;
-            width: 1em;
-            text-align: center;
-            transition: transform 0.2s ease-in-out;
-            color: #6c757d;
-        }
-
-        /* Conditional Formatting - slightly softer colors */
-        .metric-value.good { background-color: #d1e7dd; color: #0f5132; font-weight: 600; }
-        .metric-value.bad { background-color: #f8d7da; color: #842029; font-weight: 600; }
-        .metric-value.neutral { background-color: #fff3cd; color: #664d03; font-weight: 600; }
-
-        /* Trend Indicator (Sparkline and Change Arrow) */
-        .trend-cell {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px; /* Increased gap */
-            min-width: 130px; /* Wider trend column */
-            height: 35px; /* Taller for better sparkline visibility */
-        }
-
-        .sparkline {
-            width: 60px; /* Wider sparkline */
-            height: 25px; /* Taller sparkline */
-            vertical-align: middle;
-            flex-shrink: 0;
-        }
-
-        .trend-arrow {
-            font-size: 0.9em; /* Slightly larger font */
-            font-weight: bold;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .trend-arrow.up { color: #198754; } /* Bootstrap success green */
-        .trend-arrow.down { color: #dc3545; } /* Bootstrap danger red */
-        .trend-arrow.flat { color: #6c757d; }
-
-        /* Hide rows for collapsed categories */
-        .info-table tbody tr.collapsed { display: none; }
-    </style>
 </head>
 <body>
 
