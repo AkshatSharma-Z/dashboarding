@@ -25,8 +25,7 @@
             grid-template-rows: 60px 1fr 1fr;
             height: 100vh;
             overflow: hidden;
-            background: linear-gradient(#1a1a1a, #333333);
-            color: #f8f9fa;
+            background: linear-gradient(#ffffff, #f0f2f5);
             gap: 0;
             box-sizing: border-box;
         }
@@ -39,20 +38,18 @@
             align-items: center;
             gap: 10px;
             padding: 0 15px;
-            background: linear-gradient(90deg, #222, #444);
-            color: #f8f9fa;
+            background: linear-gradient(90deg, #ff671d, #ff9224);
+            color: #fff;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             z-index: 1000;
+        }
+        #app-header img {
+            height: 40px;
         }
         #app-header h1 {
             font-size: 1.4em;
             margin: 0;
             font-weight: 600;
-        }
-        .logo-text {
-            font-size: 1.1em;
-            font-weight: 600;
-            color: #ff671d;
         }
 
         /* --- REMOVED: Legends Panel and Vertical Resizer --- */
@@ -175,8 +172,8 @@
         #right-panel {
             grid-column: 1 / 2;
             grid-row: 3 / 4;
-            background: linear-gradient(rgba(40,40,40,0.95), rgba(30,30,30,0.9));
-            border: 1px solid #555;
+            background: linear-gradient(rgba(255,255,255,0.95), rgba(255,250,240,0.9));
+            border: 1px solid #f0b48a;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             overflow: hidden; /* For table's internal scroll */
@@ -200,13 +197,13 @@
             align-items: center;
             margin-bottom: 10px;
             padding: 10px 15px;
-            background: #444;
-            border-bottom: 1px solid #666;
+            background: #ffeadb;
+            border-bottom: 1px solid #f0b48a;
             border-radius: 6px 6px 0 0;
             flex-shrink: 0;
         }
-        .panel-header h3 { margin: 0; font-size: 1.2em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #f8f9fa;}
-        .panel-header small { white-space: nowrap; font-size: 0.9em; color: #ccc;}
+        .panel-header h3 { margin: 0; font-size: 1.2em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #343a40;}
+        .panel-header small { white-space: nowrap; font-size: 0.9em; color: #6c757d;}
         .panel-header button {
             background-color: #ff671d;
             color: #fff;
@@ -228,35 +225,6 @@
             flex-grow: 1;
             overflow: hidden; /* Child table wrapper manages its own scroll */
         }
-
-        .metrics-section {
-            display: grid;
-            grid-template-columns: 2fr 3fr;
-            gap: 10px;
-            flex-grow: 1;
-        }
-
-        .summary-metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-auto-rows: 1fr;
-            gap: 10px;
-        }
-
-        .summary-box {
-            background: linear-gradient(#2b2b2b, #3c3c3c);
-            border-radius: 6px;
-            padding: 10px;
-            color: #f8f9fa;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-        .summary-box .metric-value { font-size: 1.2em; font-weight: 600; }
-        .summary-box .metric-label { font-size: 0.8em; margin-top: 4px; }
-        .summary-box .sparkline { margin-top: 4px; }
 
         .metrics-table-container {
             overflow: hidden;
@@ -283,34 +251,34 @@
             background-color: #ffffff; /* Ensure background consistency */
         }
         .info-table th, .info-table td {
-            padding: 12px 18px;
-            border-bottom: 1px solid #444;
+            padding: 12px 18px; /* Increased padding */
+            border-bottom: 1px solid #f0f2f5; /* Lighter border for rows */
             text-align: left;
             word-wrap: break-word;
             box-sizing: border-box;
-            vertical-align: middle;
+            vertical-align: middle; /* Align content vertically */
         }
 
         .info-table th {
-            background-color: #555;
+            background-color: #e9ecef; /* Slightly darker header background */
             position: sticky;
             top: 0;
             z-index: 5;
             font-weight: 600;
-            color: #f8f9fa;
+            color: #495057;
             /* border-top: 1px solid #e9ecef; - Removed for cleaner look with wrapper border */
         }
         .info-table th:first-child { border-top-left-radius: 6px; }
         .info-table th:last-child { border-top-right-radius: 6px; }
 
         .info-table tbody tr:last-child td { border-bottom: none; }
-        .info-table tbody tr:nth-child(even) { background-color: #2f2f2f; }
-        .info-table tbody tr:hover td { background-color: #3a3a3a; }
+        .info-table tbody tr:nth-child(even) { background-color: #fbfbfc; } /* Subtle zebra striping */
+        .info-table tbody tr:hover td { background-color: #f0f4f7; } /* Hover effect for rows */
 
         .info-table th.metric-header-cell {
             position: sticky;
             left: 0;
-            background-color: #555;
+            background-color: #e9ecef; /* Match header background */
             z-index: 6;
             min-width: 250px; /* Slightly wider for metric names */
             width: 250px;
@@ -319,12 +287,12 @@
         .info-table td.metric-name-cell {
             position: sticky;
             left: 0;
-            background-color: inherit;
+            background-color: inherit; /* Inherit from row for zebra striping */
             z-index: 4;
             min-width: 250px;
             width: 250px;
             font-weight: normal;
-            color: #f8f9fa;
+            color: #343a40;
         }
         .info-table tbody tr:hover td.metric-name-cell { background-color: inherit; } /* Ensure hover works with sticky */
 
@@ -332,10 +300,10 @@
         .info-table th.date-header-cell { text-align: center; min-width: 80px; } /* Wider date columns */
         .info-table td.metric-value-cell { text-align: center; min-width: 80px; font-weight: 500;} /* Center values */
 
-        .info-table tr.metric-group-header { cursor: pointer; background-color: #444; color:#f8f9fa; }
+        .info-table tr.metric-group-header { cursor: pointer; background-color: #dee2e6; } /* Darker group header */
         .info-table td.metric-group-name-sticky-cell {
             font-weight: bold;
-            background-color: #444;
+            background-color: #dee2e6; /* Match header background */
             text-align: left !important;
             padding-left: 15px; /* Slightly more padding */
             position: sticky;
@@ -343,16 +311,16 @@
             z-index: 5;
             min-width: 250px;
             width: 250px;
-            border-bottom: 1px solid #666;
-            border-top: 1px solid #666;
-            color: #f8f9fa;
+            border-bottom: 1px solid #c9d0d6; /* Stronger border for separation */
+            border-top: 1px solid #c9d0d6;
+            color: #343a40;
         }
         .info-table td.metric-group-filler-cell {
-            background-color: #444;
-            border-bottom: 1px solid #666;
-            border-top: 1px solid #666;
+            background-color: #dee2e6;
+            border-bottom: 1px solid #c9d0d6;
+            border-top: 1px solid #c9d0d6;
         }
-        .info-table tr.metric-group-header:hover td { background-color: #555; }
+        .info-table tr.metric-group-header:hover td { background-color: #c9d0d6; } /* Hover for group headers */
         .info-table td.metric-group-name-sticky-cell .toggle-icon {
             display: inline-block;
             margin-right: 10px; /* More space */
@@ -404,7 +372,7 @@
 <body>
 
     <header id="app-header">
-        <span class="logo-text">TATA 1mg</span>
+        <img src="1mg.jpg" alt="Tata 1mg logo">
         <h1>City Metrics Dashboard</h1>
     </header>
 
@@ -426,16 +394,13 @@
                 <small id="data-warning-message" style="display:none; color: orange; margin-left: 10px;"></small>
                 <button id="reset-view-button" style="display: none;">View Overall Summary</button>
             </div>
-            <div class="metrics-section">
-                <div class="metrics-table-container">
-                    <div class="metrics-table-wrapper">
-                        <table class="info-table">
-                            <thead></thead>
-                            <tbody id="info-table-body"></tbody>
-                        </table>
-                    </div>
+            <div class="metrics-table-container">
+                <div class="metrics-table-wrapper">
+                    <table class="info-table">
+                        <thead></thead>
+                        <tbody id="info-table-body"></tbody>
+                    </table>
                 </div>
-                <div id="summary-metrics" class="summary-metrics-grid"></div>
             </div>
         </div>
     </div>
@@ -1038,28 +1003,6 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         ]}
     ];
 
-    const summaryMetricDefs = [
-        { key: 'gmv', name: 'GMV', icon: '💰' },
-        { key: 'growth', name: 'Growth', icon: '📈' },
-        { key: 'aov', name: 'AOV', icon: '💵' },
-        { key: 'population', name: 'Population', icon: '👥' },
-        { key: 'stores', name: 'Stores', icon: '🏬' },
-        { key: 'breach', name: 'Breach %', icon: '⚠️' }
-    ];
-
-    const citySummaryMetrics = {};
-    cityPoints.forEach((pt, idx) => {
-        const base = idx + 1;
-        citySummaryMetrics[pt.name] = {
-            gmv: [1000 + base*5, 1050 + base*5, 1100 + base*5, 1150 + base*5, 1200 + base*5, 1250 + base*5],
-            growth: [5 + base*0.1, 5.2 + base*0.1, 5.4 + base*0.1, 5.6 + base*0.1, 5.8 + base*0.1, 6 + base*0.1],
-            aov: [600 + base*2, 610 + base*2, 620 + base*2, 630 + base*2, 640 + base*2, 650 + base*2],
-            population: [base*0.5 + 1, base*0.5 + 1.1, base*0.5 + 1.2, base*0.5 + 1.3, base*0.5 + 1.4, base*0.5 + 1.5],
-            stores: [5 + base%3, 5 + base%3, 6 + base%3, 6 + base%3, 7 + base%3, 7 + base%3],
-            breach: [12 - base*0.1, 11.8 - base*0.1, 11.5 - base*0.1, 11.3 - base*0.1, 11 - base*0.1, 10.7 - base*0.1]
-        };
-    });
-
     const cityMetricsData = {
         "Bengaluru": {
             cityStatus: { qcVintage: "12 mo", cityInfo: "709 km² | 8.5M", phase: "Launch" },
@@ -1323,34 +1266,6 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
                 const valueCell = row.insertCell();
                 valueCell.textContent = sectionData[metric.key] || 'N/A';
             });
-        });
-
-        displaySummaryMetrics(cityName);
-    }
-
-    function displaySummaryMetrics(cityName) {
-        const data = citySummaryMetrics[cityName];
-        if (!data) return;
-        const container = document.getElementById('summary-metrics');
-        container.innerHTML = '';
-        summaryMetricDefs.forEach(def => {
-            const values = data[def.key] || [];
-            const latest = values[values.length - 1];
-            const slope = calculateLinearRegressionTrend(values);
-            let arrow = '▬';
-            let arrowClass = 'flat';
-            if (slope > 0.001) { arrow = '▲'; arrowClass = 'up'; }
-            else if (slope < -0.001) { arrow = '▼'; arrowClass = 'down'; }
-            const box = document.createElement('div');
-            box.className = 'summary-box';
-            box.innerHTML = `
-                <div class="metric-icon">${def.icon}</div>
-                <div class="metric-value">${latest.toFixed ? latest.toFixed(1) : latest}</div>
-                ${generateSparkline(values)}
-                <div class="trend-arrow ${arrowClass}">${arrow}</div>
-                <div class="metric-label">${def.name}</div>
-            `;
-            container.appendChild(box);
         });
     }
 
