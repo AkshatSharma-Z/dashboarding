@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hybrid Catchment & Metrics Map - Slick Layout</title>
+    <title>City Metrics Dashboard</title>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
     <!-- Leaflet CSS for OpenStreetMap -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -14,19 +17,39 @@
     <style>
         /* BASE LAYOUT: Now a single column 2x1 CSS Grid */
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
             display: grid;
-            /* Single column, full width */
             grid-template-columns: 1fr;
-            /* Map on top, Metrics Table on bottom */
-            grid-template-rows: 1fr 1fr;
+            grid-template-rows: 60px 1fr 1fr;
             height: 100vh;
-            overflow: hidden; /* Prevent body scroll, let individual panels scroll */
-            background-color: #f0f2f5; /* Light background for overall dashboard */
-            gap: 0; /* Gaps between grid items are handled by resizers/padding */
-            box-sizing: border-box; /* Include padding in element's total width/height */
+            overflow: hidden;
+            background: linear-gradient(#ffffff, #f0f2f5);
+            gap: 0;
+            box-sizing: border-box;
+        }
+
+        /* --- App Header --- */
+        #app-header {
+            grid-column: 1 / 2;
+            grid-row: 1 / 2;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 15px;
+            background: linear-gradient(90deg, #ff671d, #ff9224);
+            color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        #app-header img {
+            height: 40px;
+        }
+        #app-header h1 {
+            font-size: 1.4em;
+            margin: 0;
+            font-weight: 600;
         }
 
         /* --- REMOVED: Legends Panel and Vertical Resizer --- */
@@ -34,8 +57,8 @@
 
         /* --- Main Map Area (Now spans full width) --- */
         #map {
-            grid-column: 1 / 2; /* Now the only column */
-            grid-row: 1 / 2;    /* First row */
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
             height: 100%;
             width: 100%;
             z-index: 1;
@@ -53,13 +76,13 @@
         /* --- Floating Map Legends --- */
         .map-legend {
             position: absolute;
-            background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.8));
+            background: rgba(255, 255, 255, 0.9);
             padding: 10px;
             border-radius: 6px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-            z-index: 1000; /* Above map tiles */
-            font-size: 0.95em; /* Slightly larger */
-            max-height: 250px; /* Limit height for scrolling */
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            z-index: 1000;
+            font-size: 0.95em;
+            max-height: 250px;
             overflow-y: auto;
         }
 
@@ -120,8 +143,8 @@
 
         /* --- Horizontal Resizer (unchanged functionality) --- */
         #horizontal-resizer {
-            grid-column: 1 / 2; /* Now in the first (and only) column */
-            grid-row: 1 / 2;    /* In the first row */
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
             height: 10px; /* Make it visually grabable */
             cursor: ns-resize;
             background-color: transparent; /* Initially transparent */
@@ -147,10 +170,10 @@
 
         /* --- Right Panel (Overall Metrics - now spans full width) --- */
         #right-panel {
-            grid-column: 1 / 2; /* Now the only column */
-            grid-row: 2 / 3;    /* Second row */
-            background: linear-gradient(rgba(255,255,255,0.95), rgba(255,255,255,0.85));
-            border: 1px solid rgba(0,0,0,0.1);
+            grid-column: 1 / 2;
+            grid-row: 3 / 4;
+            background: linear-gradient(rgba(255,255,255,0.95), rgba(255,250,240,0.9));
+            border: 1px solid #f0b48a;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             overflow: hidden; /* For table's internal scroll */
@@ -173,15 +196,17 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #e2e6ea; /* Slightly darker border */
+            padding: 10px 15px;
+            background: #ffeadb;
+            border-bottom: 1px solid #f0b48a;
+            border-radius: 6px 6px 0 0;
             flex-shrink: 0;
         }
         .panel-header h3 { margin: 0; font-size: 1.2em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #343a40;}
         .panel-header small { white-space: nowrap; font-size: 0.9em; color: #6c757d;}
         .panel-header button {
-            background-color: #007bff;
-            color: white;
+            background-color: #ff671d;
+            color: #fff;
             border: none;
             padding: 8px 15px;
             border-radius: 5px;
@@ -191,7 +216,7 @@
             margin-left: 15px;
         }
         .panel-header button:hover {
-            background-color: #0056b3;
+            background-color: #e65c15;
         }
 
         .right-panel-content {
@@ -345,6 +370,11 @@
     </style>
 </head>
 <body>
+
+    <header id="app-header">
+        <img src="1mg.jpg" alt="Tata 1mg logo">
+        <h1>City Metrics Dashboard</h1>
+    </header>
 
     <!-- Removed Legends Panel and Vertical Resizer -->
 
@@ -1596,8 +1626,8 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         let isResizingHorizontal = false;
 
         // Set initial grid sizes on load to match CSS defaults
-        body.style.gridTemplateColumns = `1fr`; // Already set by CSS, but good for clarity
-        body.style.gridTemplateRows = `1fr 1fr`;
+        body.style.gridTemplateColumns = `1fr`;
+        body.style.gridTemplateRows = `60px 1fr 1fr`;
 
         // Horizontal Resizer (Map Row vs Metrics Table Row)
         horizontalResizer.addEventListener('mousedown', function(e) {
@@ -1612,16 +1642,16 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             if (!isResizingHorizontal) return;
             const bodyRect = body.getBoundingClientRect();
             // Calculate new height for the map based on mouse position relative to body's top
-            const newMapHeight = e.clientY - bodyRect.top - 10; // Account for body's top margin
+            const newMapHeight = e.clientY - bodyRect.top - 70; // Account for header and top margin
 
             const minMapHeight = 150; // Minimum height for map
             const minMetricsHeight = 250; // Minimum height for metrics table (consider header + few rows)
             
-            const totalContentHeight = bodyRect.height - 20; // 10px top + 10px bottom padding on body
+            const totalContentHeight = bodyRect.height - 20 - 60; // subtract header height
             const maxMapHeight = totalContentHeight - minMetricsHeight;
 
             if (newMapHeight > minMapHeight && newMapHeight < maxMapHeight) {
-                body.style.gridTemplateRows = `${newMapHeight}px 1fr`;
+                body.style.gridTemplateRows = `60px ${newMapHeight}px 1fr`;
                 map.invalidateSize(); // Invalidate map size after row resize
             }
         }
