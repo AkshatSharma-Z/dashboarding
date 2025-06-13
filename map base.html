@@ -973,42 +973,128 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         ]}
     ];
 
-    const cityMetricsData = {};
-    cityPoints.forEach((city, idx) => {
-        cityMetricsData[city.name] = {
-            cityStatus: {
-                qcVintage: `${12 + idx} mo`,
-                cityInfo: `${150 + idx * 5} km² | ${(1 + idx * 0.2).toFixed(1)}M`,
-                phase: idx % 3 === 0 ? 'Launch' : idx % 3 === 1 ? 'Scale' : 'Mature'
-            },
-            growth: {
-                qcCoverageVsAop: `${70 + (idx % 10)}%`,
-                qcCoveragePromised: `${65 + (idx % 10)}%`,
-                yoyGmvGrowthMay: `${10 + idx}%`,
-                toplineGmvVsAopMay: `${80 + idx}%`,
-                dailyOrders: 200 + idx * 10,
-                marketingStatus: ['Low','Medium','High'][idx % 3]
-            },
-            storeReadiness: {
-                storeType: idx % 2 === 0 ? 'Hub' : 'Spoke',
-                totalStoresAOP: 10 + idx,
-                currentProjected: 8 + idx,
-                currentLive: 5 + idx,
-                progressAgainstAOP: `${50 + idx}%`
-            },
-            operationalStability: {
-                inventoryHealth: `95 | 95 | ${90 - (idx % 5)}`,
-                inventoryDays: 40 + (idx % 10),
-                uhiGeneration: `${(0.1 + idx * 0.01).toFixed(2)}pp | ${30 + idx}`,
-                b2bReplCost: `₹${20 + idx}`,
-                storeOpsTat: `${4 + (idx % 3)} mins`,
-                processingCost: `₹${10 + idx}`,
-                lastMileTat: `${10 + (idx % 5)} mins`,
-                lastMileCost: `₹${15 + idx}`,
-                qcBreach: `${10 + (idx % 5)}%`
-            }
-        };
-    });
+    const cityMetricsData = {
+        "Bengaluru": {
+            cityStatus: { qcVintage: "12 mo", cityInfo: "709 km² | 8.5M", phase: "Launch" },
+            growth: { qcCoverageVsAop: "80%", qcCoveragePromised: "75%", yoyGmvGrowthMay: "10%", toplineGmvVsAopMay: "90%", dailyOrders: 220, marketingStatus: "Medium" },
+            storeReadiness: { storeType: "Hub", totalStoresAOP: 10, currentProjected: 8, currentLive: 5, progressAgainstAOP: "60%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 90", inventoryDays: 40, uhiGeneration: "0.15pp | 30", b2bReplCost: "₹25", storeOpsTat: "5 mins", processingCost: "₹12", lastMileTat: "15 mins", lastMileCost: "₹20", qcBreach: "10%" }
+        },
+        "Jaipur": {
+            cityStatus: { qcVintage: "13 mo", cityInfo: "467 km² | 3.1M", phase: "Scale" },
+            growth: { qcCoverageVsAop: "78%", qcCoveragePromised: "72%", yoyGmvGrowthMay: "9%", toplineGmvVsAopMay: "88%", dailyOrders: 210, marketingStatus: "Low" },
+            storeReadiness: { storeType: "Spoke", totalStoresAOP: 9, currentProjected: 7, currentLive: 4, progressAgainstAOP: "55%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 89", inventoryDays: 42, uhiGeneration: "0.16pp | 31", b2bReplCost: "₹24", storeOpsTat: "5 mins", processingCost: "₹11", lastMileTat: "14 mins", lastMileCost: "₹19", qcBreach: "11%" }
+        },
+        "Visakhapatnam": {
+            cityStatus: { qcVintage: "14 mo", cityInfo: "682 km² | 2.3M", phase: "Mature" },
+            growth: { qcCoverageVsAop: "77%", qcCoveragePromised: "70%", yoyGmvGrowthMay: "8%", toplineGmvVsAopMay: "87%", dailyOrders: 205, marketingStatus: "High" },
+            storeReadiness: { storeType: "Hub", totalStoresAOP: 8, currentProjected: 6, currentLive: 4, progressAgainstAOP: "50%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 88", inventoryDays: 41, uhiGeneration: "0.15pp | 30", b2bReplCost: "₹23", storeOpsTat: "5 mins", processingCost: "₹10", lastMileTat: "13 mins", lastMileCost: "₹18", qcBreach: "11%" }
+        },
+        "Mumbai": {
+            cityStatus: { qcVintage: "15 mo", cityInfo: "603 km² | 12.5M", phase: "Mature" },
+            growth: { qcCoverageVsAop: "82%", qcCoveragePromised: "77%", yoyGmvGrowthMay: "11%", toplineGmvVsAopMay: "92%", dailyOrders: 230, marketingStatus: "High" },
+            storeReadiness: { storeType: "Spoke", totalStoresAOP: 12, currentProjected: 9, currentLive: 6, progressAgainstAOP: "65%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 90", inventoryDays: 39, uhiGeneration: "0.18pp | 32", b2bReplCost: "₹26", storeOpsTat: "4 mins", processingCost: "₹13", lastMileTat: "12 mins", lastMileCost: "₹21", qcBreach: "9%" }
+        },
+        "Patna": {
+            cityStatus: { qcVintage: "12 mo", cityInfo: "320 km² | 2.0M", phase: "Launch" },
+            growth: { qcCoverageVsAop: "75%", qcCoveragePromised: "70%", yoyGmvGrowthMay: "7%", toplineGmvVsAopMay: "85%", dailyOrders: 200, marketingStatus: "Medium" },
+            storeReadiness: { storeType: "Hub", totalStoresAOP: 7, currentProjected: 6, currentLive: 4, progressAgainstAOP: "50%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 87", inventoryDays: 43, uhiGeneration: "0.14pp | 29", b2bReplCost: "₹22", storeOpsTat: "6 mins", processingCost: "₹10", lastMileTat: "15 mins", lastMileCost: "₹18", qcBreach: "12%" }
+        },
+        "Hyderabad": {
+            cityStatus: { qcVintage: "16 mo", cityInfo: "650 km² | 6.8M", phase: "Scale" },
+            growth: { qcCoverageVsAop: "81%", qcCoveragePromised: "76%", yoyGmvGrowthMay: "10%", toplineGmvVsAopMay: "91%", dailyOrders: 225, marketingStatus: "High" },
+            storeReadiness: { storeType: "Spoke", totalStoresAOP: 11, currentProjected: 9, currentLive: 6, progressAgainstAOP: "63%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 89", inventoryDays: 40, uhiGeneration: "0.17pp | 31", b2bReplCost: "₹25", storeOpsTat: "5 mins", processingCost: "₹12", lastMileTat: "14 mins", lastMileCost: "₹20", qcBreach: "10%" }
+        },
+        "Dehradun": {
+            cityStatus: { qcVintage: "11 mo", cityInfo: "308 km² | 0.7M", phase: "Launch" },
+            growth: { qcCoverageVsAop: "73%", qcCoveragePromised: "68%", yoyGmvGrowthMay: "6%", toplineGmvVsAopMay: "83%", dailyOrders: 190, marketingStatus: "Low" },
+            storeReadiness: { storeType: "Hub", totalStoresAOP: 6, currentProjected: 5, currentLive: 3, progressAgainstAOP: "45%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 86", inventoryDays: 44, uhiGeneration: "0.13pp | 28", b2bReplCost: "₹21", storeOpsTat: "6 mins", processingCost: "₹9", lastMileTat: "16 mins", lastMileCost: "₹17", qcBreach: "13%" }
+        },
+        "Chennai": {
+            cityStatus: { qcVintage: "14 mo", cityInfo: "426 km² | 7.1M", phase: "Scale" },
+            growth: { qcCoverageVsAop: "79%", qcCoveragePromised: "74%", yoyGmvGrowthMay: "9%", toplineGmvVsAopMay: "89%", dailyOrders: 215, marketingStatus: "Medium" },
+            storeReadiness: { storeType: "Spoke", totalStoresAOP: 10, currentProjected: 8, currentLive: 5, progressAgainstAOP: "58%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 88", inventoryDays: 41, uhiGeneration: "0.16pp | 30", b2bReplCost: "₹24", storeOpsTat: "5 mins", processingCost: "₹11", lastMileTat: "13 mins", lastMileCost: "₹19", qcBreach: "11%" }
+        },
+        "Kanpur": {
+            cityStatus: { qcVintage: "10 mo", cityInfo: "403 km² | 2.9M", phase: "Launch" },
+            growth: { qcCoverageVsAop: "72%", qcCoveragePromised: "67%", yoyGmvGrowthMay: "6%", toplineGmvVsAopMay: "82%", dailyOrders: 185, marketingStatus: "Low" },
+            storeReadiness: { storeType: "Hub", totalStoresAOP: 7, currentProjected: 6, currentLive: 4, progressAgainstAOP: "48%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 86", inventoryDays: 45, uhiGeneration: "0.13pp | 28", b2bReplCost: "₹21", storeOpsTat: "6 mins", processingCost: "₹9", lastMileTat: "16 mins", lastMileCost: "₹17", qcBreach: "13%" }
+        },
+        "Kolkata": {
+            cityStatus: { qcVintage: "17 mo", cityInfo: "205 km² | 14.8M", phase: "Mature" },
+            growth: { qcCoverageVsAop: "83%", qcCoveragePromised: "78%", yoyGmvGrowthMay: "12%", toplineGmvVsAopMay: "93%", dailyOrders: 235, marketingStatus: "High" },
+            storeReadiness: { storeType: "Spoke", totalStoresAOP: 12, currentProjected: 10, currentLive: 7, progressAgainstAOP: "67%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 90", inventoryDays: 39, uhiGeneration: "0.18pp | 32", b2bReplCost: "₹27", storeOpsTat: "4 mins", processingCost: "₹13", lastMileTat: "12 mins", lastMileCost: "₹22", qcBreach: "9%" }
+        },
+        "Ahmedabad": {
+            cityStatus: { qcVintage: "13 mo", cityInfo: "464 km² | 8.0M", phase: "Scale" },
+            growth: { qcCoverageVsAop: "80%", qcCoveragePromised: "75%", yoyGmvGrowthMay: "10%", toplineGmvVsAopMay: "90%", dailyOrders: 220, marketingStatus: "Medium" },
+            storeReadiness: { storeType: "Hub", totalStoresAOP: 9, currentProjected: 7, currentLive: 5, progressAgainstAOP: "57%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 89", inventoryDays: 40, uhiGeneration: "0.16pp | 30", b2bReplCost: "₹24", storeOpsTat: "5 mins", processingCost: "₹12", lastMileTat: "14 mins", lastMileCost: "₹20", qcBreach: "10%" }
+        },
+        "Guwahati": {
+            cityStatus: { qcVintage: "11 mo", cityInfo: "216 km² | 1.2M", phase: "Launch" },
+            growth: { qcCoverageVsAop: "74%", qcCoveragePromised: "69%", yoyGmvGrowthMay: "7%", toplineGmvVsAopMay: "84%", dailyOrders: 195, marketingStatus: "Low" },
+            storeReadiness: { storeType: "Hub", totalStoresAOP: 6, currentProjected: 5, currentLive: 3, progressAgainstAOP: "46%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 87", inventoryDays: 44, uhiGeneration: "0.14pp | 29", b2bReplCost: "₹22", storeOpsTat: "6 mins", processingCost: "₹10", lastMileTat: "15 mins", lastMileCost: "₹18", qcBreach: "12%" }
+        },
+        "Faridabad": {
+            cityStatus: { qcVintage: "12 mo", cityInfo: "215 km² | 1.4M", phase: "Scale" },
+            growth: { qcCoverageVsAop: "76%", qcCoveragePromised: "71%", yoyGmvGrowthMay: "8%", toplineGmvVsAopMay: "86%", dailyOrders: 200, marketingStatus: "Medium" },
+            storeReadiness: { storeType: "Spoke", totalStoresAOP: 8, currentProjected: 6, currentLive: 4, progressAgainstAOP: "52%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 88", inventoryDays: 42, uhiGeneration: "0.15pp | 30", b2bReplCost: "₹23", storeOpsTat: "5 mins", processingCost: "₹11", lastMileTat: "14 mins", lastMileCost: "₹19", qcBreach: "11%" }
+        },
+        "Ranchi": {
+            cityStatus: { qcVintage: "10 mo", cityInfo: "652 km² | 1.1M", phase: "Launch" },
+            growth: { qcCoverageVsAop: "72%", qcCoveragePromised: "67%", yoyGmvGrowthMay: "6%", toplineGmvVsAopMay: "82%", dailyOrders: 185, marketingStatus: "Low" },
+            storeReadiness: { storeType: "Hub", totalStoresAOP: 6, currentProjected: 5, currentLive: 3, progressAgainstAOP: "45%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 86", inventoryDays: 45, uhiGeneration: "0.13pp | 28", b2bReplCost: "₹21", storeOpsTat: "6 mins", processingCost: "₹9", lastMileTat: "16 mins", lastMileCost: "₹17", qcBreach: "13%" }
+        },
+        "Noida": {
+            cityStatus: { qcVintage: "13 mo", cityInfo: "203 km² | 0.6M", phase: "Scale" },
+            growth: { qcCoverageVsAop: "78%", qcCoveragePromised: "73%", yoyGmvGrowthMay: "9%", toplineGmvVsAopMay: "88%", dailyOrders: 210, marketingStatus: "Medium" },
+            storeReadiness: { storeType: "Spoke", totalStoresAOP: 8, currentProjected: 7, currentLive: 4, progressAgainstAOP: "54%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 88", inventoryDays: 41, uhiGeneration: "0.15pp | 30", b2bReplCost: "₹23", storeOpsTat: "5 mins", processingCost: "₹11", lastMileTat: "13 mins", lastMileCost: "₹19", qcBreach: "11%" }
+        },
+        "Bhuvneshwar": {
+            cityStatus: { qcVintage: "12 mo", cityInfo: "422 km² | 0.9M", phase: "Launch" },
+            growth: { qcCoverageVsAop: "74%", qcCoveragePromised: "69%", yoyGmvGrowthMay: "7%", toplineGmvVsAopMay: "84%", dailyOrders: 195, marketingStatus: "Low" },
+            storeReadiness: { storeType: "Hub", totalStoresAOP: 7, currentProjected: 6, currentLive: 3, progressAgainstAOP: "49%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 87", inventoryDays: 44, uhiGeneration: "0.14pp | 29", b2bReplCost: "₹22", storeOpsTat: "6 mins", processingCost: "₹10", lastMileTat: "15 mins", lastMileCost: "₹18", qcBreach: "12%" }
+        },
+        "Varanasi": {
+            cityStatus: { qcVintage: "11 mo", cityInfo: "112 km² | 1.2M", phase: "Launch" },
+            growth: { qcCoverageVsAop: "73%", qcCoveragePromised: "68%", yoyGmvGrowthMay: "6%", toplineGmvVsAopMay: "83%", dailyOrders: 190, marketingStatus: "Low" },
+            storeReadiness: { storeType: "Hub", totalStoresAOP: 6, currentProjected: 5, currentLive: 3, progressAgainstAOP: "46%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 86", inventoryDays: 45, uhiGeneration: "0.13pp | 28", b2bReplCost: "₹21", storeOpsTat: "6 mins", processingCost: "₹9", lastMileTat: "16 mins", lastMileCost: "₹17", qcBreach: "13%" }
+        },
+        "Ghaziabad": {
+            cityStatus: { qcVintage: "12 mo", cityInfo: "210 km² | 1.7M", phase: "Scale" },
+            growth: { qcCoverageVsAop: "77%", qcCoveragePromised: "72%", yoyGmvGrowthMay: "8%", toplineGmvVsAopMay: "87%", dailyOrders: 205, marketingStatus: "Medium" },
+            storeReadiness: { storeType: "Spoke", totalStoresAOP: 8, currentProjected: 6, currentLive: 4, progressAgainstAOP: "52%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 88", inventoryDays: 42, uhiGeneration: "0.15pp | 30", b2bReplCost: "₹23", storeOpsTat: "5 mins", processingCost: "₹11", lastMileTat: "14 mins", lastMileCost: "₹19", qcBreach: "11%" }
+        },
+        "New Delhi": {
+            cityStatus: { qcVintage: "18 mo", cityInfo: "1484 km² | 18.9M", phase: "Mature" },
+            growth: { qcCoverageVsAop: "84%", qcCoveragePromised: "79%", yoyGmvGrowthMay: "12%", toplineGmvVsAopMay: "94%", dailyOrders: 240, marketingStatus: "High" },
+            storeReadiness: { storeType: "Hub", totalStoresAOP: 13, currentProjected: 11, currentLive: 8, progressAgainstAOP: "70%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 91", inventoryDays: 38, uhiGeneration: "0.19pp | 33", b2bReplCost: "₹28", storeOpsTat: "4 mins", processingCost: "₹14", lastMileTat: "11 mins", lastMileCost: "₹23", qcBreach: "8%" }
+        },
+        "Gurgaon": {
+            cityStatus: { qcVintage: "13 mo", cityInfo: "282 km² | 1.1M", phase: "Scale" },
+            growth: { qcCoverageVsAop: "79%", qcCoveragePromised: "74%", yoyGmvGrowthMay: "9%", toplineGmvVsAopMay: "89%", dailyOrders: 215, marketingStatus: "Medium" },
+            storeReadiness: { storeType: "Spoke", totalStoresAOP: 9, currentProjected: 7, currentLive: 5, progressAgainstAOP: "57%" },
+            operationalStability: { inventoryHealth: "95 | 95 | 88", inventoryDays: 41, uhiGeneration: "0.16pp | 30", b2bReplCost: "₹24", storeOpsTat: "5 mins", processingCost: "₹12", lastMileTat: "13 mins", lastMileCost: "₹20", qcBreach: "11%" }
+        }
+    };
     
     let currentCityIndex = 0;
     let countdown = 30;
