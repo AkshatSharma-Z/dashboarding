@@ -53,12 +53,12 @@
         /* --- Floating Map Legends --- */
         .map-legend {
             position: absolute;
-            background: rgba(255, 255, 255, 0.95);
+            background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.8));
             padding: 10px;
             border-radius: 6px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
             z-index: 1000; /* Above map tiles */
-            font-size: 0.85em;
+            font-size: 0.95em; /* Slightly larger */
             max-height: 250px; /* Limit height for scrolling */
             overflow-y: auto;
         }
@@ -66,7 +66,7 @@
         #catchment-legend {
             bottom: 10px;
             left: 10px;
-            width: 150px; /* Smaller since we only show 4 city names */
+            width: 165px; /* 10% bigger */
         }
 
         #store-legend {
@@ -93,6 +93,14 @@
         }
         .legend-item:last-child {
             margin-bottom: 0;
+        }
+
+        #catchment-legend li {
+            cursor: pointer;
+        }
+
+        #catchment-legend li:hover {
+            text-decoration: underline;
         }
 
         .legend-color-swatch, .legend-icon {
@@ -934,6 +942,13 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
     let currentCityIndex = 0;
     let countdown = 30;
     let countdownTimer = null;
+    let nextMoveTimer = null;
+    let legendExpanded = false;
+
+    function clearTimers() {
+        if (countdownTimer) clearInterval(countdownTimer);
+        if (nextMoveTimer) clearTimeout(nextMoveTimer);
+    }
 
     function startCountdown() {
         if (countdownTimer) clearInterval(countdownTimer);
@@ -949,32 +964,56 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         const nextElem = document.getElementById('next-cities');
         if (!currentElem || !nextElem) return;
         currentElem.textContent = `${cityPoints[currentCityIndex].name} ${countdown} sec`;
-        let upcomingHtml = '';
-        for (let i = 1; i <= 3; i++) {
-            const idx = (currentCityIndex + i) % cityPoints.length;
-            upcomingHtml += `<li>${cityPoints[idx].name}</li>`;
+
+        nextElem.innerHTML = '';
+        const total = cityPoints.length;
+        const displayCount = legendExpanded ? total - 1 : 3;
+
+        for (let i = 1; i <= displayCount; i++) {
+            const idx = (currentCityIndex + i) % total;
+            const li = document.createElement('li');
+            li.textContent = cityPoints[idx].name;
+            li.style.cursor = 'pointer';
+            li.addEventListener('click', () => moveToCity(idx));
+            nextElem.appendChild(li);
         }
-        nextElem.innerHTML = upcomingHtml;
+    }
+
+    function toggleCityList() {
+        legendExpanded = !legendExpanded;
+        const legend = document.getElementById('catchment-legend');
+        if (legendExpanded) {
+            legend.style.maxHeight = '80vh';
+        } else {
+            legend.style.maxHeight = '250px';
+        }
+        updateCityLegend();
     }
 
     function initCityPan() {
         updateCityLegend();
         startCountdown();
-        setTimeout(() => panToCity(0), 30000);
+        scheduleNextMove();
     }
 
-    function panToCity(idx) {
-        clearInterval(countdownTimer);
-        const nextIdx = (idx + 1) % cityPoints.length;
-        const next = cityPoints[nextIdx];
-        map.flyTo([next.lat, next.lng], map.getZoom(), { duration: 5 });
+    function moveToCity(targetIdx) {
+        clearTimers();
+        const target = cityPoints[targetIdx];
+        map.flyTo([target.lat, target.lng], map.getZoom(), { duration: 5 });
         setTimeout(() => {
-            currentCityIndex = nextIdx;
+            currentCityIndex = targetIdx;
             countdown = 30;
             updateCityLegend();
             startCountdown();
-            setTimeout(() => panToCity(nextIdx), 30000);
+            scheduleNextMove();
         }, 5000);
+    }
+
+    function scheduleNextMove() {
+        nextMoveTimer = setTimeout(() => {
+            const nextIdx = (currentCityIndex + 1) % cityPoints.length;
+            moveToCity(nextIdx);
+        }, 30000);
     }
 
 
@@ -1205,10 +1244,13 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         catchmentLegendDiv.innerHTML = `
             <h4>Current City</h4>
             <div id="current-city"></div>
-            <h4>Next Cities</h4>
+            <h4 id="next-cities-header">Next Cities</h4>
             <ul id="next-cities" style="list-style:none;padding-left:0;margin:0"></ul>
         `;
         mapDiv.appendChild(catchmentLegendDiv);
+
+        document.getElementById('next-cities-header').addEventListener('dblclick', toggleCityList);
+        document.getElementById('next-cities').addEventListener('dblclick', toggleCityList);
 
         // Store Legend
         const storeLegendDiv = document.createElement('div');
