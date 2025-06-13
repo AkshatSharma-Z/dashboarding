@@ -43,8 +43,10 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             z-index: 1000;
         }
-        #app-header img {
-            height: 40px;
+        #brand-logo {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #fff;
         }
         #app-header h1 {
             font-size: 1.4em;
@@ -180,7 +182,8 @@
             padding: 15px;
             box-sizing: border-box;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+            gap: 15px;
             position: relative; /* For consistency */
             margin-left: 10px; /* Consistent margins */
             margin-right: 10px;
@@ -239,6 +242,41 @@
             border-radius: 6px; /* Apply border-radius to the wrapper */
             border: 1px solid #e9ecef; /* Subtle border for the whole table view */
         }
+
+        .metrics-section {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .summary-section {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .summary-grid {
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .summary-box {
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background-color: #ffffff;
+        }
+        .summary-box.up { background-color: #d1e7dd; }
+        .summary-box.down { background-color: #f8d7da; }
+        .summary-box .metric-title { font-weight: 600; margin-bottom: 5px; display:flex; align-items:center; gap:4px; }
+        .summary-box .metric-value { font-size: 1.2em; font-weight: bold; }
+        .summary-box .metric-trend { height: 20px; }
 
         /* --- Metrics Table Styles (Enhanced for appeal) --- */
         .info-table {
@@ -372,7 +410,7 @@
 <body>
 
     <header id="app-header">
-        <img src="1mg.jpg" alt="Tata 1mg logo">
+        <span id="brand-logo">TATA 1mg</span>
         <h1>City Metrics Dashboard</h1>
     </header>
 
@@ -386,20 +424,56 @@
     <!-- Horizontal Resizer Handle -->
     <div id="horizontal-resizer"></div>
 
-    <!-- Right Panel (Metrics Table - now spans full width) -->
+    <!-- Right Panel with metrics and summary boxes -->
     <div id="right-panel">
-        <div class="right-panel-content">
-            <div class="panel-header">
-                <h3 id="right-panel-title">OVERALL SUMMARY - METRICS BY DATE</h3>
-                <small id="data-warning-message" style="display:none; color: orange; margin-left: 10px;"></small>
-                <button id="reset-view-button" style="display: none;">View Overall Summary</button>
+        <div class="metrics-section">
+            <div class="right-panel-content">
+                <div class="panel-header">
+                    <h3 id="right-panel-title">OVERALL SUMMARY - METRICS BY DATE</h3>
+                    <small id="data-warning-message" style="display:none; color: orange; margin-left: 10px;"></small>
+                    <button id="reset-view-button" style="display: none;">View Overall Summary</button>
+                </div>
+                <div class="metrics-table-container">
+                    <div class="metrics-table-wrapper">
+                        <table class="info-table">
+                            <thead></thead>
+                            <tbody id="info-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <div class="metrics-table-container">
-                <div class="metrics-table-wrapper">
-                    <table class="info-table">
-                        <thead></thead>
-                        <tbody id="info-table-body"></tbody>
-                    </table>
+        </div>
+        <div class="summary-section">
+            <div class="summary-grid">
+                <div class="summary-box" id="box-gmv">
+                    <div class="metric-title"><span class="metric-icon">₹</span>GMV</div>
+                    <div class="metric-value" id="gmv-value">-</div>
+                    <div class="metric-trend" id="gmv-trend"></div>
+                </div>
+                <div class="summary-box" id="box-growth">
+                    <div class="metric-title"><span class="metric-icon">⬈</span>Growth</div>
+                    <div class="metric-value" id="growth-value">-</div>
+                    <div class="metric-trend" id="growth-trend"></div>
+                </div>
+                <div class="summary-box" id="box-aov">
+                    <div class="metric-title"><span class="metric-icon">₹</span>AOV</div>
+                    <div class="metric-value" id="aov-value">-</div>
+                    <div class="metric-trend" id="aov-trend"></div>
+                </div>
+                <div class="summary-box" id="box-population">
+                    <div class="metric-title"><span class="metric-icon">👥</span>Population</div>
+                    <div class="metric-value" id="population-value">-</div>
+                    <div class="metric-trend" id="population-trend"></div>
+                </div>
+                <div class="summary-box" id="box-stores">
+                    <div class="metric-title"><span class="metric-icon">🏬</span>Stores</div>
+                    <div class="metric-value" id="stores-value">-</div>
+                    <div class="metric-trend" id="stores-trend"></div>
+                </div>
+                <div class="summary-box" id="box-breach">
+                    <div class="metric-title"><span class="metric-icon">⚠️</span>Breach %</div>
+                    <div class="metric-value" id="breach-value">-</div>
+                    <div class="metric-trend" id="breach-trend"></div>
                 </div>
             </div>
         </div>
@@ -1267,6 +1341,8 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
                 valueCell.textContent = sectionData[metric.key] || 'N/A';
             });
         });
+
+        updateSummaryBoxes(cityName);
     }
 
 
@@ -1293,6 +1369,28 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
     const catchmentOrderData = {};
     allCatchmentNames.forEach(name => { catchmentOrderData[name] = Math.floor(Math.random() * 50 + 20); });
     catchmentOrderData["Unknown Catchment"] = 5;
+
+    // Sample summary metrics data for the six metric boxes
+    const summaryMetricsData = {};
+    function generateRandomSeries(base) {
+        const arr = [];
+        let val = base;
+        for (let i = 0; i < 6; i++) {
+            val += (Math.random() - 0.5) * base * 0.1;
+            arr.push(Math.round(val));
+        }
+        return arr;
+    }
+    cityPoints.forEach(city => {
+        summaryMetricsData[city.name] = {
+            gmv: generateRandomSeries(1000),
+            growth: generateRandomSeries(10),
+            aov: generateRandomSeries(200),
+            population: generateRandomSeries(500000),
+            stores: generateRandomSeries(5),
+            breach: generateRandomSeries(5)
+        };
+    });
 
    const defaultStyle = { weight: 0, opacity: 0, color: '#000000', fillOpacity: 0.5 };
     const catchmentBoundaryStyle = { weight: 2, color: '#007bff', fillColor: '#007bff', fillOpacity: 0, dashArray: '5, 5' }; // Slightly different highlight
@@ -1400,6 +1498,33 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
 
         const slope = numerator / denominator;
         return slope;
+    }
+
+    function updateSummaryBoxes(cityName) {
+        const data = summaryMetricsData[cityName];
+        if (!data) return;
+        const metrics = [
+            { key: 'gmv', valueId: 'gmv-value', trendId: 'gmv-trend', boxId: 'box-gmv' },
+            { key: 'growth', valueId: 'growth-value', trendId: 'growth-trend', boxId: 'box-growth' },
+            { key: 'aov', valueId: 'aov-value', trendId: 'aov-trend', boxId: 'box-aov' },
+            { key: 'population', valueId: 'population-value', trendId: 'population-trend', boxId: 'box-population' },
+            { key: 'stores', valueId: 'stores-value', trendId: 'stores-trend', boxId: 'box-stores' },
+            { key: 'breach', valueId: 'breach-value', trendId: 'breach-trend', boxId: 'box-breach' }
+        ];
+        metrics.forEach(m => {
+            const series = data[m.key];
+            const currentVal = series[series.length - 1];
+            document.getElementById(m.valueId).textContent = currentVal;
+            const trendElem = document.getElementById(m.trendId);
+            trendElem.innerHTML = generateSparkline(series);
+            const slope = calculateLinearRegressionTrend(series);
+            const box = document.getElementById(m.boxId);
+            box.classList.remove('up', 'down');
+            if (slope !== null && !isNaN(slope)) {
+                if (slope >= 0) box.classList.add('up');
+                else box.classList.add('down');
+            }
+        });
     }
 
     document.addEventListener('DOMContentLoaded', function() {
