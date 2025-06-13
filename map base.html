@@ -149,8 +149,8 @@
         #right-panel {
             grid-column: 1 / 2; /* Now the only column */
             grid-row: 2 / 3;    /* Second row */
-            background-color: #ffffff;
-            border: 1px solid #e0e0e0; /* Border for metrics panel */
+            background: linear-gradient(rgba(255,255,255,0.95), rgba(255,255,255,0.85));
+            border: 1px solid rgba(0,0,0,0.1);
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             overflow: hidden; /* For table's internal scroll */
@@ -938,6 +938,77 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         { name: "New Delhi", lat: 28.6358, lng: 77.2245 },
         { name: "Gurgaon", lat: 28.4595, lng: 77.0266 }
     ];
+
+    const metricsByGroupDef = [
+        { section: 'cityStatus', groupName: 'City Status', metrics: [
+            { key: 'qcVintage', name: 'QC vintage (since QC start)' },
+            { key: 'cityInfo', name: 'City (Area | Population)' },
+            { key: 'phase', name: 'Phase' }
+        ]},
+        { section: 'growth', groupName: 'Growth', metrics: [
+            { key: 'qcCoverageVsAop', name: 'QC coverage (vs AOP)' },
+            { key: 'qcCoveragePromised', name: 'QC coverage (promised <60 min)' },
+            { key: 'yoyGmvGrowthMay', name: 'YoY GMV Growth(May)' },
+            { key: 'toplineGmvVsAopMay', name: 'Topline GMV(vs AOP May)' },
+            { key: 'dailyOrders', name: 'Daily Orders' },
+            { key: 'marketingStatus', name: 'Marketing status?' }
+        ]},
+        { section: 'storeReadiness', groupName: 'Store Readiness', metrics: [
+            { key: 'storeType', name: 'Store type' },
+            { key: 'totalStoresAOP', name: 'Total stores planned in AOP' },
+            { key: 'currentProjected', name: 'Current projected stores as per AOP (May end)' },
+            { key: 'currentLive', name: "Current live stores (Jun'25)" },
+            { key: 'progressAgainstAOP', name: 'Current progress against AOP' }
+        ]},
+        { section: 'operationalStability', groupName: 'Operational Stability', metrics: [
+            { key: 'inventoryHealth', name: 'Inventory health (A0 | A1 | A2) (95 | 95 | 90)' },
+            { key: 'inventoryDays', name: 'Inventory Days in ₹ (<45 days)' },
+            { key: 'uhiGeneration', name: 'UHI generation per day (% of inv qty) | Qty per store (< 0.2pp | 30)' },
+            { key: 'b2bReplCost', name: 'B2B replenishment cost per orderline' },
+            { key: 'storeOpsTat', name: 'Store Ops (Processing TAT)(<=5mins)' },
+            { key: 'processingCost', name: 'Processing cost per orderline' },
+            { key: 'lastMileTat', name: 'Last Mile (waiting for rider TAT)(<=15mins)' },
+            { key: 'lastMileCost', name: 'Last Mile cost per orderline(May)' },
+            { key: 'qcBreach', name: 'QC Breach % (<15%)' }
+        ]}
+    ];
+
+    const cityMetricsData = {};
+    cityPoints.forEach((city, idx) => {
+        cityMetricsData[city.name] = {
+            cityStatus: {
+                qcVintage: `${12 + idx} mo`,
+                cityInfo: `${150 + idx * 5} km² | ${(1 + idx * 0.2).toFixed(1)}M`,
+                phase: idx % 3 === 0 ? 'Launch' : idx % 3 === 1 ? 'Scale' : 'Mature'
+            },
+            growth: {
+                qcCoverageVsAop: `${70 + (idx % 10)}%`,
+                qcCoveragePromised: `${65 + (idx % 10)}%`,
+                yoyGmvGrowthMay: `${10 + idx}%`,
+                toplineGmvVsAopMay: `${80 + idx}%`,
+                dailyOrders: 200 + idx * 10,
+                marketingStatus: ['Low','Medium','High'][idx % 3]
+            },
+            storeReadiness: {
+                storeType: idx % 2 === 0 ? 'Hub' : 'Spoke',
+                totalStoresAOP: 10 + idx,
+                currentProjected: 8 + idx,
+                currentLive: 5 + idx,
+                progressAgainstAOP: `${50 + idx}%`
+            },
+            operationalStability: {
+                inventoryHealth: `95 | 95 | ${90 - (idx % 5)}`,
+                inventoryDays: 40 + (idx % 10),
+                uhiGeneration: `${(0.1 + idx * 0.01).toFixed(2)}pp | ${30 + idx}`,
+                b2bReplCost: `₹${20 + idx}`,
+                storeOpsTat: `${4 + (idx % 3)} mins`,
+                processingCost: `₹${10 + idx}`,
+                lastMileTat: `${10 + (idx % 5)} mins`,
+                lastMileCost: `₹${15 + idx}`,
+                qcBreach: `${10 + (idx % 5)}%`
+            }
+        };
+    });
     
     let currentCityIndex = 0;
     let countdown = 30;
@@ -992,7 +1063,9 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
 
     function initCityPan() {
         updateCityLegend();
+        displayCityMetrics(cityPoints[currentCityIndex].name);
         startCountdown();
+        scheduleMetricsScroll();
         scheduleNextMove();
     }
 
@@ -1004,7 +1077,9 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             currentCityIndex = targetIdx;
             countdown = 30;
             updateCityLegend();
+            displayCityMetrics(cityPoints[targetIdx].name);
             startCountdown();
+            scheduleMetricsScroll();
             scheduleNextMove();
         }, 5000);
     }
@@ -1014,6 +1089,68 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             const nextIdx = (currentCityIndex + 1) % cityPoints.length;
             moveToCity(nextIdx);
         }, 30000);
+    }
+
+    let scrollAnimation = null;
+    let scrollDelay = null;
+
+    function startMetricsScroll() {
+        const wrapper = document.querySelector('.metrics-table-wrapper');
+        if (!wrapper) return;
+        if (scrollAnimation) cancelAnimationFrame(scrollAnimation);
+        wrapper.scrollTop = 0;
+        const distance = wrapper.scrollHeight - wrapper.clientHeight;
+        const start = performance.now();
+        const duration = 28000; // 28 seconds
+        function step(now) {
+            const progress = Math.min((now - start) / duration, 1);
+            wrapper.scrollTop = progress * distance;
+            if (progress < 1) {
+                scrollAnimation = requestAnimationFrame(step);
+            }
+        }
+        scrollAnimation = requestAnimationFrame(step);
+    }
+
+    function scheduleMetricsScroll() {
+        if (scrollDelay) clearTimeout(scrollDelay);
+        scrollDelay = setTimeout(startMetricsScroll, 3000); // start after 3s
+    }
+
+    function displayCityMetrics(cityName) {
+        const data = cityMetricsData[cityName];
+        if (!data) return;
+        const titleElement = document.getElementById('right-panel-title');
+        titleElement.textContent = `${cityName} - City Metrics`;
+        const warningMessageElement = document.getElementById('data-warning-message');
+        if (warningMessageElement) warningMessageElement.style.display = 'none';
+
+        const table = document.querySelector('#right-panel .info-table');
+        const thead = table.querySelector('thead');
+        const tbody = document.getElementById('info-table-body');
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+
+        const headerRow = thead.insertRow();
+        headerRow.insertCell().textContent = 'Metric';
+        headerRow.insertCell().textContent = 'Value';
+
+        metricsByGroupDef.forEach(group => {
+            const groupRow = tbody.insertRow();
+            groupRow.className = 'metric-group-header';
+            const groupCell = groupRow.insertCell();
+            groupCell.colSpan = 2;
+            groupCell.textContent = group.groupName;
+
+            const sectionData = data[group.section] || {};
+            group.metrics.forEach(metric => {
+                const row = tbody.insertRow();
+                const nameCell = row.insertCell();
+                nameCell.textContent = metric.name;
+                const valueCell = row.insertCell();
+                valueCell.textContent = sectionData[metric.key] || 'N/A';
+            });
+        });
     }
 
 
@@ -1156,7 +1293,7 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         loadGeoJsonLayer();
         plotStoreMarkers(); // No filtering needed here now, all types are always visible
         initializeResizers(); // Initialize only horizontal resizer now
-        updateRightPanel("ALL"); // Initial load with overall metrics
+        displayCityMetrics(cityPoints[0].name);
         initCityPan(); // Start panning between cities
         // Event listener for the "View Overall Summary" button
         document.getElementById('reset-view-button').addEventListener('click', resetHighlightAndFitAll);
@@ -1316,7 +1453,7 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             document.getElementById('reset-view-button').style.display = 'none'; // Hide reset button
         }
 
-        updateRightPanel(originalCatchmentName);
+        // Metrics table now shows city data only
     }
 
     // Function to go back to overall summary view
