@@ -1213,7 +1213,7 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
     };
     
     let currentCityIndex = 0;
-    let countdown = 30;
+    let countdown = 60;
     let countdownTimer = null;
     let nextMoveTimer = null;
     let legendExpanded = false;
@@ -1277,7 +1277,7 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         map.flyTo([target.lat, target.lng], map.getZoom(), { duration: 5 });
         setTimeout(() => {
             currentCityIndex = targetIdx;
-            countdown = 30;
+            countdown = 60;
             updateCityLegend();
             displayCityMetrics(cityPoints[targetIdx].name);
             startCountdown();
@@ -1290,7 +1290,7 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         nextMoveTimer = setTimeout(() => {
             const nextIdx = (currentCityIndex + 1) % cityPoints.length;
             moveToCity(nextIdx);
-        }, 30000);
+        }, 60000);
     }
 
     let scrollAnimation = null;
@@ -1303,7 +1303,7 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         wrapper.scrollTop = 0;
         const distance = wrapper.scrollHeight - wrapper.clientHeight;
         const start = performance.now();
-        const duration = 28000; // 28 seconds
+        const duration = 57000; // 57 seconds
         function step(now) {
             const progress = Math.min((now - start) / duration, 1);
             wrapper.scrollTop = progress * distance;
