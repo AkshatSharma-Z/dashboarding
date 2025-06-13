@@ -160,6 +160,17 @@
             background-color: rgba(0, 123, 255, 0.1); /* Highlight on hover */
         }
 
+        /* Vertical resizer between metrics and summary sections */
+        #vertical-resizer {
+            width: 6px;
+            cursor: ew-resize;
+            background-color: transparent;
+            flex-shrink: 0;
+        }
+        #vertical-resizer:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+
 
         /* Leaflet custom styles for map overlays */
         .leaflet-pane.leaflet-overlay-pane path { stroke-width: 1px; }
@@ -443,6 +454,7 @@
                 </div>
             </div>
         </div>
+        <div id="vertical-resizer"></div>
         <div class="summary-section">
             <div class="summary-grid">
                 <div class="summary-box" id="box-gmv">
@@ -1743,12 +1755,17 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         storeMarkersLayerGroup.addTo(map);
     }
 
-    // Initialize only the horizontal resizer
+    // Initialize horizontal and vertical resizers
     function initializeResizers() {
         const body = document.body;
         const horizontalResizer = document.getElementById('horizontal-resizer');
+        const verticalResizer = document.getElementById('vertical-resizer');
+        const rightPanel = document.getElementById('right-panel');
+        const metricsSection = document.querySelector('.metrics-section');
+        const summarySection = document.querySelector('.summary-section');
 
         let isResizingHorizontal = false;
+        let isResizingVertical = false;
 
         // Set initial grid sizes on load to match CSS defaults
         body.style.gridTemplateColumns = `1fr`;
@@ -1761,6 +1778,15 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             body.style.cursor = 'ns-resize';
             window.addEventListener('mousemove', doDragHorizontal);
             window.addEventListener('mouseup', stopDrag);
+        });
+
+        // Vertical Resizer (Metrics vs Summary)
+        verticalResizer.addEventListener('mousedown', function(e) {
+            isResizingVertical = true;
+            e.preventDefault();
+            body.style.cursor = 'ew-resize';
+            window.addEventListener('mousemove', doDragVertical);
+            window.addEventListener('mouseup', stopDragVertical);
         });
 
         function doDragHorizontal(e) {
@@ -1787,6 +1813,30 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             window.removeEventListener('mousemove', doDragHorizontal);
             window.removeEventListener('mouseup', stopDrag);
             map.invalidateSize(); // Final invalidate for map to ensure proper rendering
+        }
+
+        function doDragVertical(e) {
+            if (!isResizingVertical) return;
+            const panelRect = rightPanel.getBoundingClientRect();
+            let newWidth = e.clientX - panelRect.left;
+            const minMetricsWidth = 150;
+            const minSummaryWidth = 150;
+            const totalWidth = panelRect.width;
+            if (newWidth < minMetricsWidth) newWidth = minMetricsWidth;
+            if (totalWidth - newWidth < minSummaryWidth) {
+                newWidth = totalWidth - minSummaryWidth;
+            }
+            metricsSection.style.flex = 'none';
+            summarySection.style.flex = 'none';
+            metricsSection.style.width = newWidth + 'px';
+            summarySection.style.width = (totalWidth - newWidth - verticalResizer.offsetWidth) + 'px';
+        }
+
+        function stopDragVertical() {
+            isResizingVertical = false;
+            body.style.cursor = 'default';
+            window.removeEventListener('mousemove', doDragVertical);
+            window.removeEventListener('mouseup', stopDragVertical);
         }
     }
 
