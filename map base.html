@@ -57,10 +57,17 @@
         /* --- REMOVED: Legends Panel and Vertical Resizer --- */
         /* These CSS rules are now removed as per requirements */
 
-        /* --- Main Map Area (Now spans full width) --- */
-        #map {
+        /* --- Top Section with Map and Executive Summary --- */
+        #top-section {
             grid-column: 1 / 2;
             grid-row: 2 / 3;
+            display: grid;
+            grid-template-columns: 3fr 6px 2fr;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
             height: 100%;
             width: 100%;
             z-index: 1;
@@ -69,10 +76,34 @@
             box-sizing: border-box;
             background-color: #ffffff; /* Ensure map background is white before tiles load */
             margin-left: 10px; /* Consistent margins */
-            margin-right: 10px;
+            margin-right: 5px;
             margin-top: 10px;
             margin-bottom: 5px; /* Space from horizontal resizer */
             position: relative; /* Crucial for positioning floating legends */
+        }
+
+        #vertical-resizer {
+            cursor: ew-resize;
+            background-color: transparent;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+        #vertical-resizer:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+
+        #executive-summary {
+            background: linear-gradient(rgba(255,255,255,0.95), rgba(255,250,240,0.9));
+            border: 1px solid #f0b48a;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 15px;
+            box-sizing: border-box;
+            margin-right: 10px;
+            margin-left: 5px;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            overflow: hidden;
         }
 
         /* --- Floating Map Legends --- */
@@ -414,11 +445,21 @@
         <h1>City Metrics Dashboard</h1>
     </header>
 
-    <!-- Removed Legends Panel and Vertical Resizer -->
-
-    <!-- Main Map Area -->
-    <div id="map">
-        <!-- New Floating Legends will be injected here by JavaScript -->
+    <!-- Top Section: Map and Executive Summary -->
+    <div id="top-section">
+        <div id="map">
+            <!-- New Floating Legends will be injected here by JavaScript -->
+        </div>
+        <div id="vertical-resizer"></div>
+        <div id="executive-summary">
+            <div class="panel-header"><h3>Executive Summary</h3></div>
+            <table class="info-table" id="executive-summary-table">
+                <thead>
+                    <tr><th>Metric</th><th>Value</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 
     <!-- Horizontal Resizer Handle -->
@@ -1199,6 +1240,109 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             operationalStability: { inventoryHealth: "95 | 95 | 88", inventoryDays: 41, uhiGeneration: "0.16pp | 30", b2bReplCost: "₹24", storeOpsTat: "5 mins", processingCost: "₹12", lastMileTat: "13 mins", lastMileCost: "₹20", qcBreach: "11%" }
         }
     };
+
+    const executiveSummaryData = {
+        "Gurgaon": {
+            cityInfo: "450 sq km | 30L",
+            qcCoveragePromised: "74%",
+            dailyOrders: 215,
+            currentLive: 5,
+            progressAgainstAOP: "57%",
+            inventoryHealth: "95 | 95 | 88",
+            storeOpsTat: "5 mins",
+            lastMileTat: "13 mins"
+        },
+        "Bengaluru": {
+            cityInfo: "750 sq km | 1.4 Cr",
+            qcCoveragePromised: "75%",
+            dailyOrders: 220,
+            currentLive: 5,
+            progressAgainstAOP: "60%",
+            inventoryHealth: "95 | 95 | 90",
+            storeOpsTat: "5 mins",
+            lastMileTat: "15 mins"
+        },
+        "Noida": {
+            cityInfo: "300 sq km | 15L",
+            qcCoveragePromised: "73%",
+            dailyOrders: 210,
+            currentLive: 4,
+            progressAgainstAOP: "54%",
+            inventoryHealth: "95 | 95 | 88",
+            storeOpsTat: "5 mins",
+            lastMileTat: "13 mins"
+        },
+        "Jaipur": {
+            cityInfo: "450 sq km | 40L",
+            qcCoveragePromised: "72%",
+            dailyOrders: 210,
+            currentLive: 4,
+            progressAgainstAOP: "55%",
+            inventoryHealth: "95 | 95 | 89",
+            storeOpsTat: "5 mins",
+            lastMileTat: "14 mins"
+        },
+        "Lucknow": {
+            cityInfo: "600 sq km | 40L",
+            qcCoveragePromised: "75%",
+            dailyOrders: 200,
+            currentLive: 4,
+            progressAgainstAOP: "56%",
+            inventoryHealth: "95 | 95 | 89",
+            storeOpsTat: "5 mins",
+            lastMileTat: "14 mins"
+        },
+        "Kolkata": {
+            cityInfo: "200 sq km | 45L",
+            qcCoveragePromised: "78%",
+            dailyOrders: 235,
+            currentLive: 7,
+            progressAgainstAOP: "67%",
+            inventoryHealth: "95 | 95 | 90",
+            storeOpsTat: "4 mins",
+            lastMileTat: "12 mins"
+        },
+        "New Delhi": {
+            cityInfo: "1500 sq km | 3.5cr",
+            qcCoveragePromised: "79%",
+            dailyOrders: 240,
+            currentLive: 8,
+            progressAgainstAOP: "70%",
+            inventoryHealth: "95 | 95 | 91",
+            storeOpsTat: "4 mins",
+            lastMileTat: "11 mins"
+        },
+        "Mumbai": {
+            cityInfo: "600 sq km | 2cr",
+            qcCoveragePromised: "77%",
+            dailyOrders: 230,
+            currentLive: 6,
+            progressAgainstAOP: "65%",
+            inventoryHealth: "95 | 95 | 90",
+            storeOpsTat: "4 mins",
+            lastMileTat: "12 mins"
+        },
+        "Hyderabad": {
+            cityInfo: "650 sq km | 1cr",
+            qcCoveragePromised: "76%",
+            dailyOrders: 225,
+            currentLive: 6,
+            progressAgainstAOP: "63%",
+            inventoryHealth: "95 | 95 | 89",
+            storeOpsTat: "5 mins",
+            lastMileTat: "14 mins"
+        },
+        "Chennai": {
+            cityInfo: "425 sq km | 87L",
+            qcCoveragePromised: "74%",
+            dailyOrders: 215,
+            currentLive: 5,
+            progressAgainstAOP: "58%",
+            inventoryHealth: "95 | 95 | 88",
+            storeOpsTat: "5 mins",
+            lastMileTat: "13 mins"
+        }
+    };
     
     let currentCityIndex = 0;
     let countdown = 30;
@@ -1343,6 +1487,7 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         });
 
         updateSummaryBoxes(cityName);
+        updateExecutiveSummary(cityName);
     }
 
 
@@ -1527,13 +1672,52 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         });
     }
 
+    function updateExecutiveSummary(cityName) {
+        const tbody = document.querySelector('#executive-summary-table tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        const data = executiveSummaryData[cityName];
+        if (!data) {
+            const row1 = tbody.insertRow();
+            const cell1 = row1.insertCell();
+            cell1.colSpan = 2;
+            cell1.style.textAlign = 'center';
+            cell1.style.fontSize = '1.2em';
+            cell1.textContent = '-';
+            const row2 = tbody.insertRow();
+            const cell2 = row2.insertCell();
+            cell2.colSpan = 2;
+            cell2.style.textAlign = 'center';
+            cell2.textContent = 'data apke nazdeeki cinema gharo mai';
+            return;
+        }
+
+        const metrics = [
+            { key: 'cityInfo', name: 'City (Area | Population)' },
+            { key: 'qcCoveragePromised', name: 'QC coverage (promised <60 min)' },
+            { key: 'dailyOrders', name: 'Daily Orders' },
+            { key: 'currentLive', name: "Current live stores (Jun'25)" },
+            { key: 'progressAgainstAOP', name: 'Current progress against AOP' },
+            { key: 'inventoryHealth', name: 'Inventory health (A0 | A1 | A2) (95 | 95 | 90)' },
+            { key: 'storeOpsTat', name: 'Store Ops (Processing TAT)(<=5mins)' },
+            { key: 'lastMileTat', name: 'Last Mile (waiting for rider TAT)(<=15mins)' }
+        ];
+
+        metrics.forEach(m => {
+            const row = tbody.insertRow();
+            row.insertCell().textContent = m.name;
+            row.insertCell().textContent = data[m.key] || 'N/A';
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         initializeMap();
         preprocessGeoJsonData();
         createFloatingLegends(); // New function for map legends
         loadGeoJsonLayer();
         plotStoreMarkers(); // No filtering needed here now, all types are always visible
-        initializeResizers(); // Initialize only horizontal resizer now
+        initializeResizers(); // Initialize horizontal and vertical resizers
         displayCityMetrics(cityPoints[0].name);
         initCityPan(); // Start panning between cities
         // Event listener for the "View Overall Summary" button
@@ -1747,12 +1931,16 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
     function initializeResizers() {
         const body = document.body;
         const horizontalResizer = document.getElementById('horizontal-resizer');
+        const topSection = document.getElementById('top-section');
+        const verticalResizer = document.getElementById('vertical-resizer');
 
         let isResizingHorizontal = false;
+        let isResizingVertical = false;
 
         // Set initial grid sizes on load to match CSS defaults
         body.style.gridTemplateColumns = `1fr`;
         body.style.gridTemplateRows = `60px 1fr 1fr`;
+        topSection.style.gridTemplateColumns = `3fr 6px 2fr`;
 
         // Horizontal Resizer (Map Row vs Metrics Table Row)
         horizontalResizer.addEventListener('mousedown', function(e) {
@@ -1761,6 +1949,15 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             body.style.cursor = 'ns-resize';
             window.addEventListener('mousemove', doDragHorizontal);
             window.addEventListener('mouseup', stopDrag);
+        });
+
+        // Vertical Resizer (Map vs Executive Summary)
+        verticalResizer.addEventListener('mousedown', function(e) {
+            isResizingVertical = true;
+            e.preventDefault();
+            body.style.cursor = 'ew-resize';
+            window.addEventListener('mousemove', doDragVertical);
+            window.addEventListener('mouseup', stopDragVertical);
         });
 
         function doDragHorizontal(e) {
@@ -1781,12 +1978,35 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             }
         }
 
+        function doDragVertical(e) {
+            if (!isResizingVertical) return;
+            const rect = topSection.getBoundingClientRect();
+            const newMapWidth = e.clientX - rect.left - 10; // account for left margin
+            const minMapWidth = 200;
+            const minExecWidth = 200;
+            const totalWidth = rect.width - 6 - 15; // resizer width + margins
+            const maxMapWidth = totalWidth - minExecWidth;
+            if (newMapWidth > minMapWidth && newMapWidth < maxMapWidth) {
+                const execWidth = totalWidth - newMapWidth;
+                topSection.style.gridTemplateColumns = `${newMapWidth}px 6px ${execWidth}px`;
+                map.invalidateSize();
+            }
+        }
+
         function stopDrag() {
             isResizingHorizontal = false;
             body.style.cursor = 'default';
             window.removeEventListener('mousemove', doDragHorizontal);
             window.removeEventListener('mouseup', stopDrag);
             map.invalidateSize(); // Final invalidate for map to ensure proper rendering
+        }
+
+        function stopDragVertical() {
+            isResizingVertical = false;
+            body.style.cursor = 'default';
+            window.removeEventListener('mousemove', doDragVertical);
+            window.removeEventListener('mouseup', stopDragVertical);
+            map.invalidateSize();
         }
     }
 
