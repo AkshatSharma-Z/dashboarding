@@ -22,7 +22,7 @@
             padding: 0;
             display: grid;
             grid-template-columns: 1fr;
-            grid-template-rows: 60px 1fr 1fr;
+            grid-template-rows: 60px 3fr 2fr;
             height: 100vh;
             overflow: hidden;
             background: linear-gradient(#ffffff, #f0f2f5);
@@ -104,6 +104,8 @@
             margin-top: 10px;
             margin-bottom: 5px;
             overflow: hidden;
+            align-self: start;
+            height: calc(100% - 20px);
         }
 
         /* --- Floating Map Legends --- */
@@ -126,8 +128,8 @@
         }
 
         #store-legend {
-            bottom: 10px;
-            right: 10px;
+            top: 10px;
+            left: 10px;
             width: 150px; /* Fixed width to make it compact */
         }
 
@@ -452,7 +454,6 @@
         </div>
         <div id="vertical-resizer"></div>
         <div id="executive-summary">
-            <div class="panel-header"><h3>Executive Summary</h3></div>
             <table class="info-table" id="executive-summary-table">
                 <thead>
                     <tr><th>Metric</th><th>Value</th></tr>
@@ -1939,7 +1940,7 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
 
         // Set initial grid sizes on load to match CSS defaults
         body.style.gridTemplateColumns = `1fr`;
-        body.style.gridTemplateRows = `60px 1fr 1fr`;
+        body.style.gridTemplateRows = `60px 3fr 2fr`;
         topSection.style.gridTemplateColumns = `3fr 6px 2fr`;
 
         // Horizontal Resizer (Map Row vs Metrics Table Row)
