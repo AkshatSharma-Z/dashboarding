@@ -94,6 +94,15 @@
             background-color: rgba(0, 123, 255, 0.1);
         }
 
+        #bottom-vertical-resizer {
+            cursor: ew-resize;
+            background-color: transparent;
+            z-index: 10;
+        }
+        #bottom-vertical-resizer:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+
         #executive-summary {
             background: linear-gradient(rgba(255,255,255,0.95), rgba(255,250,240,0.9));
             border: 1px solid #f0b48a;
@@ -216,9 +225,8 @@
             overflow: hidden; /* For table's internal scroll */
             padding: 15px;
             box-sizing: border-box;
-            display: flex;
-            flex-direction: row;
-            gap: 15px;
+            display: grid;
+            grid-template-columns: 2fr 6px 3fr;
             position: relative; /* For consistency */
             margin-left: 10px; /* Consistent margins */
             margin-right: 10px;
@@ -279,15 +287,15 @@
         }
 
         .metrics-section {
-            flex: 2;
             display: flex;
             flex-direction: column;
+            margin-right: 5px;
         }
 
         .summary-section {
-            flex: 3;
             display: flex;
             flex-direction: column;
+            margin-left: 5px;
         }
 
         .summary-grid {
@@ -487,6 +495,7 @@
                 </div>
             </div>
         </div>
+        <div id="bottom-vertical-resizer"></div>
         <div class="summary-section">
             <div class="summary-grid">
                 <div class="summary-box" id="box-gmv">
@@ -1344,6 +1353,116 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             inventoryHealth: "95 | 95 | 88",
             storeOpsTat: "5 mins",
             lastMileTat: "13 mins"
+        },
+        "Visakhapatnam": {
+            cityInfo: "682 sq km | 23L",
+            qcCoveragePromised: "70%",
+            dailyOrders: 205,
+            currentLive: 4,
+            progressAgainstAOP: "50%",
+            inventoryHealth: "95 | 95 | 88",
+            storeOpsTat: "5 mins",
+            lastMileTat: "13 mins"
+        },
+        "Patna": {
+            cityInfo: "320 sq km | 20L",
+            qcCoveragePromised: "70%",
+            dailyOrders: 200,
+            currentLive: 4,
+            progressAgainstAOP: "50%",
+            inventoryHealth: "95 | 95 | 87",
+            storeOpsTat: "6 mins",
+            lastMileTat: "15 mins"
+        },
+        "Dehradun": {
+            cityInfo: "308 sq km | 7L",
+            qcCoveragePromised: "68%",
+            dailyOrders: 190,
+            currentLive: 3,
+            progressAgainstAOP: "45%",
+            inventoryHealth: "95 | 95 | 86",
+            storeOpsTat: "6 mins",
+            lastMileTat: "16 mins"
+        },
+        "Kanpur": {
+            cityInfo: "403 sq km | 29L",
+            qcCoveragePromised: "67%",
+            dailyOrders: 185,
+            currentLive: 4,
+            progressAgainstAOP: "48%",
+            inventoryHealth: "95 | 95 | 86",
+            storeOpsTat: "6 mins",
+            lastMileTat: "16 mins"
+        },
+        "Ahmedabad": {
+            cityInfo: "464 sq km | 80L",
+            qcCoveragePromised: "75%",
+            dailyOrders: 220,
+            currentLive: 5,
+            progressAgainstAOP: "57%",
+            inventoryHealth: "95 | 95 | 89",
+            storeOpsTat: "5 mins",
+            lastMileTat: "14 mins"
+        },
+        "Guwahati": {
+            cityInfo: "216 sq km | 12L",
+            qcCoveragePromised: "69%",
+            dailyOrders: 195,
+            currentLive: 3,
+            progressAgainstAOP: "46%",
+            inventoryHealth: "95 | 95 | 87",
+            storeOpsTat: "6 mins",
+            lastMileTat: "15 mins"
+        },
+        "Faridabad": {
+            cityInfo: "215 sq km | 14L",
+            qcCoveragePromised: "71%",
+            dailyOrders: 200,
+            currentLive: 4,
+            progressAgainstAOP: "52%",
+            inventoryHealth: "95 | 95 | 88",
+            storeOpsTat: "5 mins",
+            lastMileTat: "14 mins"
+        },
+        "Ranchi": {
+            cityInfo: "652 sq km | 11L",
+            qcCoveragePromised: "67%",
+            dailyOrders: 185,
+            currentLive: 3,
+            progressAgainstAOP: "45%",
+            inventoryHealth: "95 | 95 | 86",
+            storeOpsTat: "6 mins",
+            lastMileTat: "16 mins"
+        },
+        "Bhuvneshwar": {
+            cityInfo: "422 sq km | 9L",
+            qcCoveragePromised: "69%",
+            dailyOrders: 195,
+            currentLive: 3,
+            progressAgainstAOP: "49%",
+            inventoryHealth: "95 | 95 | 87",
+            storeOpsTat: "6 mins",
+            lastMileTat: "15 mins"
+        },
+        "Varanasi": {
+            cityInfo: "112 sq km | 12L",
+            qcCoveragePromised: "68%",
+            dailyOrders: 190,
+            currentLive: 3,
+            progressAgainstAOP: "46%",
+            inventoryHealth: "95 | 95 | 86",
+            storeOpsTat: "6 mins",
+            lastMileTat: "16 mins"
+        },
+        "Ghaziabad": {
+            cityInfo: "210 sq km | 17L",
+            qcCoveragePromised: "72%",
+            dailyOrders: 205,
+            currentLive: 4,
+            progressAgainstAOP: "52%",
+            inventoryHealth: "95 | 95 | 88",
+            storeOpsTat: "5 mins",
+            lastMileTat: "14 mins"
         }
     };
     
@@ -1936,14 +2055,18 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         const horizontalResizer = document.getElementById('horizontal-resizer');
         const topSection = document.getElementById('top-section');
         const verticalResizer = document.getElementById('vertical-resizer');
+        const bottomVerticalResizer = document.getElementById('bottom-vertical-resizer');
+        const rightPanel = document.getElementById('right-panel');
 
         let isResizingHorizontal = false;
         let isResizingVertical = false;
+        let isResizingBottomVertical = false;
 
         // Set initial grid sizes on load to match CSS defaults
         body.style.gridTemplateColumns = `1fr`;
         body.style.gridTemplateRows = `60px 3fr 2fr`;
         topSection.style.gridTemplateColumns = `3fr 6px 2fr`;
+        rightPanel.style.gridTemplateColumns = `2fr 6px 3fr`;
 
         // Horizontal Resizer (Map Row vs Metrics Table Row)
         horizontalResizer.addEventListener('mousedown', function(e) {
@@ -1961,6 +2084,15 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             body.style.cursor = 'ew-resize';
             window.addEventListener('mousemove', doDragVertical);
             window.addEventListener('mouseup', stopDragVertical);
+        });
+
+        // Bottom Vertical Resizer (Metrics vs Summary)
+        bottomVerticalResizer.addEventListener('mousedown', function(e) {
+            isResizingBottomVertical = true;
+            e.preventDefault();
+            body.style.cursor = 'ew-resize';
+            window.addEventListener('mousemove', doDragBottomVertical);
+            window.addEventListener('mouseup', stopDragBottomVertical);
         });
 
         function doDragHorizontal(e) {
@@ -1996,6 +2128,20 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             }
         }
 
+        function doDragBottomVertical(e) {
+            if (!isResizingBottomVertical) return;
+            const rect = rightPanel.getBoundingClientRect();
+            const newMetricsWidth = e.clientX - rect.left - 10; // account for left margin
+            const minMetricsWidth = 200;
+            const minSummaryWidth = 200;
+            const totalWidth = rect.width - 6 - 20; // resizer width + side margins
+            const maxMetricsWidth = totalWidth - minSummaryWidth;
+            if (newMetricsWidth > minMetricsWidth && newMetricsWidth < maxMetricsWidth) {
+                const summaryWidth = totalWidth - newMetricsWidth;
+                rightPanel.style.gridTemplateColumns = `${newMetricsWidth}px 6px ${summaryWidth}px`;
+            }
+        }
+
         function stopDrag() {
             isResizingHorizontal = false;
             body.style.cursor = 'default';
@@ -2010,6 +2156,13 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             window.removeEventListener('mousemove', doDragVertical);
             window.removeEventListener('mouseup', stopDragVertical);
             map.invalidateSize();
+        }
+
+        function stopDragBottomVertical() {
+            isResizingBottomVertical = false;
+            body.style.cursor = 'default';
+            window.removeEventListener('mousemove', doDragBottomVertical);
+            window.removeEventListener('mouseup', stopDragBottomVertical);
         }
     }
 
