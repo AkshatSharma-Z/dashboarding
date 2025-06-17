@@ -135,18 +135,6 @@
             width: 150px; /* Fixed width to make it compact */
         }
 
-        #bottom-vertical-resizer {
-            cursor: ew-resize;
-            background-color: transparent;
-            height: calc(100% - 30px);
-            margin-top: 15px;
-            margin-bottom: 15px;
-            z-index: 10;
-        }
-        #bottom-vertical-resizer:hover {
-            background-color: rgba(0, 123, 255, 0.1);
-        }
-
         .map-legend h4 {
             margin-top: 0;
             margin-bottom: 10px;
@@ -228,9 +216,9 @@
             overflow: hidden; /* For table's internal scroll */
             padding: 15px;
             box-sizing: border-box;
-            display: grid;
-            grid-template-columns: 2fr 6px 3fr;
-            gap: 0;
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
             position: relative; /* For consistency */
             margin-left: 10px; /* Consistent margins */
             margin-right: 10px;
@@ -499,7 +487,6 @@
                 </div>
             </div>
         </div>
-        <div id="bottom-vertical-resizer"></div>
         <div class="summary-section">
             <div class="summary-grid">
                 <div class="summary-box" id="box-gmv">
@@ -1949,18 +1936,14 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
         const horizontalResizer = document.getElementById('horizontal-resizer');
         const topSection = document.getElementById('top-section');
         const verticalResizer = document.getElementById('vertical-resizer');
-        const rightPanel = document.getElementById('right-panel');
-        const bottomVerticalResizer = document.getElementById('bottom-vertical-resizer');
 
         let isResizingHorizontal = false;
         let isResizingVertical = false;
-        let isResizingBottom = false;
 
         // Set initial grid sizes on load to match CSS defaults
         body.style.gridTemplateColumns = `1fr`;
         body.style.gridTemplateRows = `60px 3fr 2fr`;
         topSection.style.gridTemplateColumns = `3fr 6px 2fr`;
-        rightPanel.style.gridTemplateColumns = `2fr 6px 3fr`;
 
         // Horizontal Resizer (Map Row vs Metrics Table Row)
         horizontalResizer.addEventListener('mousedown', function(e) {
@@ -1978,14 +1961,6 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             body.style.cursor = 'ew-resize';
             window.addEventListener('mousemove', doDragVertical);
             window.addEventListener('mouseup', stopDragVertical);
-        });
-
-        bottomVerticalResizer.addEventListener('mousedown', function(e) {
-            isResizingBottom = true;
-            e.preventDefault();
-            body.style.cursor = 'ew-resize';
-            window.addEventListener('mousemove', doDragBottomVertical);
-            window.addEventListener('mouseup', stopDragBottomVertical);
         });
 
         function doDragHorizontal(e) {
@@ -2021,20 +1996,6 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             }
         }
 
-        function doDragBottomVertical(e) {
-            if (!isResizingBottom) return;
-            const rect = rightPanel.getBoundingClientRect();
-            const newMetricsWidth = e.clientX - rect.left - 15; // account for padding
-            const minMetricsWidth = 200;
-            const minSummaryWidth = 200;
-            const totalWidth = rect.width - 6 - 30; // resizer width + padding left+right
-            const maxMetricsWidth = totalWidth - minSummaryWidth;
-            if (newMetricsWidth > minMetricsWidth && newMetricsWidth < maxMetricsWidth) {
-                const summaryWidth = totalWidth - newMetricsWidth;
-                rightPanel.style.gridTemplateColumns = `${newMetricsWidth}px 6px ${summaryWidth}px`;
-            }
-        }
-
         function stopDrag() {
             isResizingHorizontal = false;
             body.style.cursor = 'default';
@@ -2049,13 +2010,6 @@ const overallMetricsByDate = { /* Your full overallMetricsByDate data */
             window.removeEventListener('mousemove', doDragVertical);
             window.removeEventListener('mouseup', stopDragVertical);
             map.invalidateSize();
-        }
-
-        function stopDragBottomVertical() {
-            isResizingBottom = false;
-            body.style.cursor = 'default';
-            window.removeEventListener('mousemove', doDragBottomVertical);
-            window.removeEventListener('mouseup', stopDragBottomVertical);
         }
     }
 
